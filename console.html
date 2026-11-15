@@ -58,13 +58,6 @@
       border-radius: 0 !important;
     }
 
-    .status-bubble,
-    .status-bubble-tail,
-    .status-bubble-dot,
-    .sound-bar {
-      border-radius: 9999px !important;
-    }
-
     html, body {
       margin: 0;
       padding: 0;
@@ -188,51 +181,6 @@
       margin: 0;
       color: var(--text-main);
     }
-
-    .status-wrap { position: relative; display: inline-flex; align-items: center; }
-
-    .status-bubble {
-      background: #25143a;
-      color: #f0eaff;
-      border: 2px solid var(--border-crisp);
-      padding: 5px 14px;
-      font-size: 0.76rem;
-      font-weight: 800;
-      letter-spacing: 0.4px;
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      animation: floatBubble 3.2s ease-in-out infinite;
-      box-shadow: 3px 3px 0 var(--placeholder-bg);
-    }
-
-    .status-bubble-tail {
-      width: 10px;
-      height: 10px;
-      background: #25143a;
-      border: 2px solid var(--border-crisp);
-      position: absolute;
-      left: -6px;
-      bottom: -5px;
-    }
-
-    .status-bubble-dot {
-      width: 5px;
-      height: 5px;
-      background: #25143a;
-      border: 1.5px solid var(--border-crisp);
-      position: absolute;
-      left: -12px;
-      bottom: -9px;
-    }
-
-    .equalizer { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
-    .sound-bar { width: 3px; background: var(--green); animation: eqPulse 1.1s ease-in-out infinite; }
-    .sound-bar:nth-child(2) { animation-delay: 0.2s; }
-    .sound-bar:nth-child(3) { animation-delay: 0.4s; }
-
-    @keyframes eqPulse { 0%, 100% { height: 4px; } 50% { height: 12px; } }
-    @keyframes floatBubble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
 
     .topbar-controls {
       display: flex;
@@ -448,7 +396,6 @@
       text-align: center;
     }
 
-    /* Hardcover Preview Card */
     .book-card-link {
       display: flex;
       flex-direction: column;
@@ -572,7 +519,6 @@
       text-overflow: ellipsis;
     }
 
-    /* Tables & Lists */
     .table-scroll { width: 100%; overflow-x: auto; }
     .neo-table { width: 100%; border-collapse: collapse; background: var(--card-bg); }
     .neo-table th, .neo-table td { border: 2px solid var(--border-crisp); padding: 10px 12px; text-align: left; vertical-align: middle; }
@@ -603,7 +549,6 @@
     .shelf-manage-meta { display: flex; align-items: center; gap: 10px; min-width: 0; }
     .row-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-    /* Lightbox Modals */
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -620,7 +565,7 @@
 
     .modal-box {
       position: relative;
-      width: min(100%, 640px);
+      width: min(100%, 660px);
       max-height: 90vh;
       background: var(--card-bg);
       border: 4px solid var(--border-crisp);
@@ -712,7 +657,6 @@
     @media (max-width: 600px) {
       .topbar { padding: 12px 64px 12px 14px; }
       .book-builder-split, .form-row-2 { grid-template-columns: 1fr; }
-      .status-wrap { display: none; }
     }
   </style>
 </head>
@@ -728,25 +672,16 @@
           <span class="brand-badge"><i class="fa-solid fa-sliders"></i></span>
           <h1 class="brand-title">neoLiB</h1>
         </a>
-
-        <div class="status-wrap">
-          <div class="status-bubble">
-            <span class="equalizer" aria-hidden="true">
-              <span class="sound-bar"></span>
-              <span class="sound-bar"></span>
-              <span class="sound-bar"></span>
-            </span>
-            <span id="consoleStatusText">BACKEND CONSOLE</span>
-          </div>
-          <span class="status-bubble-tail" aria-hidden="true"></span>
-          <span class="status-bubble-dot" aria-hidden="true"></span>
-        </div>
       </div>
 
       <div class="topbar-controls">
-        <button id="signOutBtn" class="cozy-btn danger" type="button" style="display:none;">
-          <i class="fa-solid fa-right-from-bracket"></i>
-          <span>Sign Out</span>
+        <button id="openPasswordModalBtn" class="cozy-btn" type="button" style="display:none;">
+          <i class="fa-solid fa-key"></i>
+          <span>Change Password</span>
+        </button>
+        <button id="lockConsoleBtn" class="cozy-btn danger" type="button" style="display:none;">
+          <i class="fa-solid fa-lock"></i>
+          <span>Lock</span>
         </button>
         <button id="openSupabaseModalBtn" class="cozy-btn lavender" type="button">
           <i class="fa-solid fa-database"></i>
@@ -764,42 +699,38 @@
     </header>
 
     <main class="console-workspace">
-      <!-- Admin Auth Gate (Shown in Supabase Mode until signed in) -->
-      <section id="adminLoginSection" class="pop-shell" data-stamp="✦ ADMIN AUTH" style="display:none; max-width:540px; margin:20px auto; width:100%;">
+      <!-- Password Lock Gate -->
+      <section id="passwordGateSection" class="pop-shell" data-stamp="✦ LOCKED" style="max-width:480px; margin:28px auto; width:100%;">
         <div class="slide-card panel-inner">
           <h2 class="panel-title">
-            <span><i class="fa-solid fa-lock"></i> Admin Sign In</span>
-            <span class="tag cyan mono">SUPABASE AUTH</span>
+            <span><i class="fa-solid fa-lock"></i> Console Locked</span>
+            <span class="tag cyan mono" id="lockModeTag">DATABASE</span>
           </h2>
           <p style="margin:0 0 14px; font-size:0.9rem; color:var(--text-muted);">
-            Sign in with your Supabase Auth admin email and password to create, edit, or delete shelves and books.
+            Enter the console password to create, edit, or delete shelves and books.
           </p>
-          <form id="adminLoginForm" class="form-grid">
+          <form id="unlockForm" class="form-grid">
             <div class="field-group">
-              <label class="field-label" for="adminEmail">Admin Email</label>
-              <input id="adminEmail" class="cozy-input" type="email" required placeholder="admin@example.com" />
+              <label class="field-label" for="consolePasswordInput">Password</label>
+              <input id="consolePasswordInput" class="cozy-input" type="password" required placeholder="Enter console password..." autocomplete="current-password" />
             </div>
-            <div class="field-group">
-              <label class="field-label" for="adminPassword">Password</label>
-              <input id="adminPassword" class="cozy-input" type="password" required placeholder="••••••••" />
-            </div>
-            <button class="cozy-btn primary" type="submit">
-              <i class="fa-solid fa-key"></i>
+            <button id="unlockSubmitBtn" class="cozy-btn primary" type="submit">
+              <i class="fa-solid fa-unlock"></i>
               <span>Unlock Console</span>
             </button>
           </form>
         </div>
       </section>
 
-      <!-- Main Console Area -->
-      <div id="consoleProtectedArea" style="display:flex; flex-direction:column; gap:28px;">
+      <!-- Unlocked Console Workspace -->
+      <div id="consoleProtectedArea" style="display:none; flex-direction:column; gap:28px;">
         <section class="console-stats-row" aria-label="Library Telemetry">
           <div class="pop-shell" data-stamp="✦ MODE">
             <div class="slide-card stat-card-inner">
               <div>
                 <div class="stat-label">Backend Link</div>
                 <div class="stat-value" id="statMode" style="font-size:1.15rem; margin-top:4px;">DEMO</div>
-                <div class="mono" id="statUserEmail" style="font-size:0.74rem; color:var(--text-muted); margin-top:2px;"></div>
+                <div class="mono" id="statSubNote" style="font-size:0.74rem; color:var(--text-muted); margin-top:2px;"></div>
               </div>
               <div class="stat-icon-box" id="statModeIcon"><i class="fa-solid fa-plug"></i></div>
             </div>
@@ -978,6 +909,38 @@
     </main>
   </div>
 
+  <!-- Change Console Password Modal -->
+  <div class="modal-overlay" id="changePasswordModal" role="dialog" aria-modal="true" aria-labelledby="pwModalTitle">
+    <div class="modal-box" style="max-width:460px;">
+      <button class="modal-close-protrude" type="button" data-close-modal="changePasswordModal" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h2 id="pwModalTitle" style="margin:0; font-size:1.3rem;">
+        <i class="fa-solid fa-key"></i> Change Console Password
+      </h2>
+      <p style="margin:0; font-size:0.88rem; color:var(--text-muted);">
+        Your new password is hashed and saved directly in the database.
+      </p>
+      <form id="changePasswordForm" class="form-grid">
+        <div class="field-group">
+          <label class="field-label" for="oldPwInput">Current Password</label>
+          <input id="oldPwInput" class="cozy-input" type="password" required placeholder="Current password" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="newPwInput">New Password</label>
+          <input id="newPwInput" class="cozy-input" type="password" required placeholder="Enter new password" />
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="confirmPwInput">Confirm New Password</label>
+          <input id="confirmPwInput" class="cozy-input" type="password" required placeholder="Repeat new password" />
+        </div>
+        <button class="cozy-btn primary" type="submit">
+          <i class="fa-solid fa-floppy-disk"></i> Save New Password
+        </button>
+      </form>
+    </div>
+  </div>
+
   <!-- Supabase Config Modal -->
   <div class="modal-overlay" id="supabaseModal" role="dialog" aria-modal="true" aria-labelledby="supaModalTitle">
     <div class="modal-box">
@@ -1020,7 +983,7 @@
       </h2>
       <div class="modal-scroll-area">
         <p style="margin:0; font-size:0.88rem; color:var(--text-muted);">
-          Run this in Supabase &rarr; <strong>SQL Editor</strong>. Replace <code>your-admin-email@example.com</code> with your Supabase Auth user email.
+          Run this once in Supabase &rarr; <strong>SQL Editor</strong>. It creates your shelves, books, and password-protected database functions (default password: <code>1234</code>).
         </p>
         <pre class="sql-block" id="sqlScriptText">create extension if not exists pgcrypto;
 
@@ -1044,26 +1007,199 @@ create table if not exists public.books (
   created_at timestamptz not null default now()
 );
 
+create table if not exists public.console_config (
+  id integer primary key default 1 check (id = 1),
+  password_hash text not null,
+  updated_at timestamptz not null default now()
+);
+
 create index if not exists idx_books_shelf_id on public.books(shelf_id);
 
+-- Lock down direct table access
 alter table public.shelves enable row level security;
 alter table public.books enable row level security;
+alter table public.console_config enable row level security;
 
+drop policy if exists "Allow public read shelves" on public.shelves;
 create policy "Allow public read shelves"
   on public.shelves for select to anon, authenticated using (true);
 
+drop policy if exists "Allow public read books" on public.books;
 create policy "Allow public read books"
   on public.books for select to anon, authenticated using (true);
 
-create policy "Admin write shelves"
-  on public.shelves for all to authenticated
-  using ((auth.jwt() ->> 'email') = 'your-admin-email@example.com')
-  with check ((auth.jwt() ->> 'email') = 'your-admin-email@example.com');
+-- Seed default password '1234' (only if not already set)
+create or replace function public._neolib_seed_pw()
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+begin
+  insert into public.console_config (id, password_hash)
+  values (1, crypt('1234', gen_salt('bf')))
+  on conflict (id) do nothing;
+end;
+$$;
+select public._neolib_seed_pw();
+drop function public._neolib_seed_pw();
 
-create policy "Admin write books"
-  on public.books for all to authenticated
-  using ((auth.jwt() ->> 'email') = 'your-admin-email@example.com')
-  with check ((auth.jwt() ->> 'email') = 'your-admin-email@example.com');</pre>
+-- Verify console password
+create or replace function public.verify_console_password(p_password text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+begin
+  return exists (
+    select 1 from public.console_config
+    where id = 1 and password_hash = crypt(coalesce(p_password, ''), password_hash)
+  );
+end;
+$$;
+
+-- Change console password in database
+create or replace function public.change_console_password(p_old_password text, p_new_password text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+begin
+  if not public.verify_console_password(p_old_password) then
+    raise exception 'Current password is incorrect';
+  end if;
+  if length(trim(coalesce(p_new_password, ''))) = 0 then
+    raise exception 'New password cannot be empty';
+  end if;
+
+  update public.console_config
+  set password_hash = crypt(p_new_password, gen_salt('bf')),
+      updated_at = now()
+  where id = 1;
+  return true;
+end;
+$$;
+
+-- Admin Shelf Create / Update
+create or replace function public.admin_save_shelf(
+  p_password text,
+  p_id uuid,
+  p_name text,
+  p_code text,
+  p_description text,
+  p_accent text
+)
+returns public.shelves
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_row public.shelves;
+begin
+  if not public.verify_console_password(p_password) then
+    raise exception 'Unauthorized: invalid console password';
+  end if;
+
+  if p_id is null then
+    insert into public.shelves (name, code, description, accent)
+    values (trim(p_name), coalesce(nullif(trim(p_code), ''), 'SH-01'), coalesce(trim(p_description), ''), coalesce(nullif(trim(p_accent), ''), 'lavender'))
+    returning * into v_row;
+  else
+    update public.shelves
+    set name = trim(p_name),
+        code = coalesce(nullif(trim(p_code), ''), 'SH-01'),
+        description = coalesce(trim(p_description), ''),
+        accent = coalesce(nullif(trim(p_accent), ''), 'lavender')
+    where id = p_id
+    returning * into v_row;
+  end if;
+
+  return v_row;
+end;
+$$;
+
+-- Admin Shelf Delete
+create or replace function public.admin_delete_shelf(p_password text, p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+begin
+  if not public.verify_console_password(p_password) then
+    raise exception 'Unauthorized: invalid console password';
+  end if;
+  delete from public.shelves where id = p_id;
+end;
+$$;
+
+-- Admin Book Create / Update
+create or replace function public.admin_save_book(
+  p_password text,
+  p_id uuid,
+  p_shelf_id uuid,
+  p_title text,
+  p_author text,
+  p_format text,
+  p_thumbnail_url text,
+  p_download_url text
+)
+returns public.books
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+declare
+  v_row public.books;
+begin
+  if not public.verify_console_password(p_password) then
+    raise exception 'Unauthorized: invalid console password';
+  end if;
+
+  if p_id is null then
+    insert into public.books (shelf_id, title, author, format, thumbnail_url, download_url)
+    values (p_shelf_id, trim(p_title), coalesce(trim(p_author), ''), upper(coalesce(nullif(trim(p_format), ''), 'PDF')), coalesce(trim(p_thumbnail_url), ''), trim(p_download_url))
+    returning * into v_row;
+  else
+    update public.books
+    set shelf_id = p_shelf_id,
+        title = trim(p_title),
+        author = coalesce(trim(p_author), ''),
+        format = upper(coalesce(nullif(trim(p_format), ''), 'PDF')),
+        thumbnail_url = coalesce(trim(p_thumbnail_url), ''),
+        download_url = trim(p_download_url)
+    where id = p_id
+    returning * into v_row;
+  end if;
+
+  return v_row;
+end;
+$$;
+
+-- Admin Book Delete
+create or replace function public.admin_delete_book(p_password text, p_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+begin
+  if not public.verify_console_password(p_password) then
+    raise exception 'Unauthorized: invalid console password';
+  end if;
+  delete from public.books where id = p_id;
+end;
+$$;
+
+grant execute on function public.verify_console_password(text) to anon, authenticated;
+grant execute on function public.change_console_password(text, text) to anon, authenticated;
+grant execute on function public.admin_save_shelf(text, uuid, text, text, text, text) to anon, authenticated;
+grant execute on function public.admin_delete_shelf(text, uuid) to anon, authenticated;
+grant execute on function public.admin_save_book(text, uuid, uuid, text, text, text, text, text) to anon, authenticated;
+grant execute on function public.admin_delete_book(text, uuid) to anon, authenticated;</pre>
         <div>
           <button id="copySqlBtn" class="cozy-btn primary" type="button">
             <i class="fa-solid fa-copy"></i> Copy SQL Script
@@ -1090,7 +1226,6 @@ create policy "Admin write books"
     </div>
   </div>
 
-  <!-- Supabase JS UMD v2 + Deploy-Time Secret Injection Target -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script id="neolib-env">window.NEOLIB_ENV = { SUPABASE_URL: "", SUPABASE_ANON_KEY: "" };</script>
   <script>
@@ -1102,6 +1237,8 @@ create policy "Admin write books"
       const LS_SUPA_KEY = "neolib_supabase_key";
       const LS_DEMO_SHELVES = "neolib_demo_shelves_v1";
       const LS_DEMO_BOOKS = "neolib_demo_books_v1";
+      const LS_DEMO_PW = "neolib_demo_console_pw";
+      const SS_UNLOCK_PW = "neolib_session_console_pw";
 
       const DEFAULT_SHELVES = [
         {
@@ -1157,7 +1294,7 @@ create policy "Admin write books"
 
       let supabaseClient = null;
       let activeMode = "demo";
-      let state = { shelves: [], books: [], user: null, pendingConfirm: null };
+      let state = { shelves: [], books: [], unlockedPassword: null, pendingConfirm: null };
 
       function escapeHtml(str) {
         return String(str ?? "")
@@ -1235,7 +1372,6 @@ create policy "Admin write books"
           try {
             supabaseClient = window.supabase.createClient(url, key);
             activeMode = "supabase";
-            supabaseClient.auth.onAuthStateChange(() => refreshAll());
             return;
           } catch (err) {
             console.error(err);
@@ -1245,13 +1381,36 @@ create policy "Admin write books"
         activeMode = "demo";
         if (!localStorage.getItem(LS_DEMO_SHELVES)) localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(DEFAULT_SHELVES));
         if (!localStorage.getItem(LS_DEMO_BOOKS)) localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(DEFAULT_BOOKS));
+        if (!localStorage.getItem(LS_DEMO_PW)) localStorage.setItem(LS_DEMO_PW, "1234");
       }
 
-      async function getCurrentUser() {
-        if (activeMode !== "supabase" || !supabaseClient) return null;
-        const { data, error } = await supabaseClient.auth.getSession();
-        if (error) return null;
-        return data && data.session ? data.session.user : null;
+      /* =====================================================
+         Database Password Gate & RPC Operations
+         ===================================================== */
+      async function verifyPassword(pw) {
+        if (activeMode === "supabase" && supabaseClient) {
+          const { data, error } = await supabaseClient.rpc("verify_console_password", { p_password: pw });
+          if (error) throw error;
+          return Boolean(data);
+        }
+        const stored = localStorage.getItem(LS_DEMO_PW) || "1234";
+        return pw === stored;
+      }
+
+      async function changePassword(oldPw, newPw) {
+        if (activeMode === "supabase" && supabaseClient) {
+          const { data, error } = await supabaseClient.rpc("change_console_password", {
+            p_old_password: oldPw,
+            p_new_password: newPw
+          });
+          if (error) throw error;
+          return Boolean(data);
+        }
+        const stored = localStorage.getItem(LS_DEMO_PW) || "1234";
+        if (oldPw !== stored) throw new Error("Current password is incorrect");
+        if (!newPw.trim()) throw new Error("New password cannot be empty");
+        localStorage.setItem(LS_DEMO_PW, newPw);
+        return true;
       }
 
       async function fetchLibrary() {
@@ -1270,28 +1429,32 @@ create policy "Admin write books"
         };
       }
 
-      async function createShelf(payload) {
-        const row = { name: payload.name.trim(), code: (payload.code || "SH-01").trim(), description: (payload.description || "").trim(), accent: payload.accent || "lavender" };
+      async function saveShelf(id, payload) {
         if (activeMode === "supabase" && supabaseClient) {
-          const { data, error } = await supabaseClient.from("shelves").insert([row]).select().single();
+          const { data, error } = await supabaseClient.rpc("admin_save_shelf", {
+            p_password: state.unlockedPassword || "",
+            p_id: id || null,
+            p_name: payload.name,
+            p_code: payload.code,
+            p_description: payload.description,
+            p_accent: payload.accent
+          });
           if (error) throw error;
           return data;
         }
         const shelves = JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]");
-        const created = { id: uid(), ...row, created_at: new Date().toISOString() };
-        shelves.push(created);
-        localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(shelves));
-        return created;
-      }
-
-      async function updateShelf(id, payload) {
-        const row = { name: payload.name.trim(), code: (payload.code || "SH-01").trim(), description: (payload.description || "").trim(), accent: payload.accent || "lavender" };
-        if (activeMode === "supabase" && supabaseClient) {
-          const { data, error } = await supabaseClient.from("shelves").update(row).eq("id", id).select().single();
-          if (error) throw error;
-          return data;
+        const row = {
+          name: payload.name.trim(),
+          code: (payload.code || "SH-01").trim(),
+          description: (payload.description || "").trim(),
+          accent: payload.accent || "lavender"
+        };
+        if (!id) {
+          const created = { id: uid(), ...row, created_at: new Date().toISOString() };
+          shelves.push(created);
+          localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(shelves));
+          return created;
         }
-        const shelves = JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]");
         const idx = shelves.findIndex((s) => s.id === id);
         if (idx === -1) throw new Error("Shelf not found");
         shelves[idx] = { ...shelves[idx], ...row };
@@ -1301,7 +1464,10 @@ create policy "Admin write books"
 
       async function deleteShelf(id) {
         if (activeMode === "supabase" && supabaseClient) {
-          const { error } = await supabaseClient.from("shelves").delete().eq("id", id);
+          const { error } = await supabaseClient.rpc("admin_delete_shelf", {
+            p_password: state.unlockedPassword || "",
+            p_id: id
+          });
           if (error) throw error;
           return;
         }
@@ -1309,7 +1475,22 @@ create policy "Admin write books"
         localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]").filter((b) => b.shelf_id !== id)));
       }
 
-      async function createBook(payload) {
+      async function saveBook(id, payload) {
+        if (activeMode === "supabase" && supabaseClient) {
+          const { data, error } = await supabaseClient.rpc("admin_save_book", {
+            p_password: state.unlockedPassword || "",
+            p_id: id || null,
+            p_shelf_id: payload.shelf_id,
+            p_title: payload.title,
+            p_author: payload.author,
+            p_format: payload.format,
+            p_thumbnail_url: payload.thumbnail_url,
+            p_download_url: payload.download_url
+          });
+          if (error) throw error;
+          return data;
+        }
+        const books = JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]");
         const row = {
           shelf_id: payload.shelf_id,
           title: payload.title.trim(),
@@ -1318,33 +1499,12 @@ create policy "Admin write books"
           thumbnail_url: (payload.thumbnail_url || "").trim(),
           download_url: payload.download_url.trim()
         };
-        if (activeMode === "supabase" && supabaseClient) {
-          const { data, error } = await supabaseClient.from("books").insert([row]).select().single();
-          if (error) throw error;
-          return data;
+        if (!id) {
+          const created = { id: uid(), ...row, created_at: new Date().toISOString() };
+          books.push(created);
+          localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(books));
+          return created;
         }
-        const books = JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]");
-        const created = { id: uid(), ...row, created_at: new Date().toISOString() };
-        books.push(created);
-        localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(books));
-        return created;
-      }
-
-      async function updateBook(id, payload) {
-        const row = {
-          shelf_id: payload.shelf_id,
-          title: payload.title.trim(),
-          author: (payload.author || "").trim(),
-          format: (payload.format || "PDF").trim().toUpperCase(),
-          thumbnail_url: (payload.thumbnail_url || "").trim(),
-          download_url: payload.download_url.trim()
-        };
-        if (activeMode === "supabase" && supabaseClient) {
-          const { data, error } = await supabaseClient.from("books").update(row).eq("id", id).select().single();
-          if (error) throw error;
-          return data;
-        }
-        const books = JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]");
         const idx = books.findIndex((b) => b.id === id);
         if (idx === -1) throw new Error("Book not found");
         books[idx] = { ...books[idx], ...row };
@@ -1354,7 +1514,10 @@ create policy "Admin write books"
 
       async function deleteBook(id) {
         if (activeMode === "supabase" && supabaseClient) {
-          const { error } = await supabaseClient.from("books").delete().eq("id", id);
+          const { error } = await supabaseClient.rpc("admin_delete_book", {
+            p_password: state.unlockedPassword || "",
+            p_id: id
+          });
           if (error) throw error;
           return;
         }
@@ -1402,50 +1565,59 @@ create policy "Admin write books"
         openModal("confirmModal");
       }
 
-      async function syncAuthGate() {
-        const loginSection = document.getElementById("adminLoginSection");
-        const protectedArea = document.getElementById("consoleProtectedArea");
-        const signOutBtn = document.getElementById("signOutBtn");
+      function showLockedUI() {
+        document.getElementById("lockModeTag").textContent = activeMode === "supabase" ? "SUPABASE DB" : "LOCAL DEMO";
+        document.getElementById("passwordGateSection").style.display = "block";
+        document.getElementById("consoleProtectedArea").style.display = "none";
+        document.getElementById("openPasswordModalBtn").style.display = "none";
+        document.getElementById("lockConsoleBtn").style.display = "none";
+      }
 
-        if (activeMode === "supabase") {
-          state.user = await getCurrentUser();
-          if (!state.user) {
-            loginSection.style.display = "block";
-            protectedArea.style.display = "none";
-            signOutBtn.style.display = "none";
-            document.getElementById("consoleStatusText").textContent = "ADMIN LOCKED";
-            return false;
-          }
-          loginSection.style.display = "none";
-          protectedArea.style.display = "flex";
-          signOutBtn.style.display = "inline-flex";
-          return true;
+      function showUnlockedUI() {
+        document.getElementById("passwordGateSection").style.display = "none";
+        document.getElementById("consoleProtectedArea").style.display = "flex";
+        document.getElementById("openPasswordModalBtn").style.display = "inline-flex";
+        document.getElementById("lockConsoleBtn").style.display = "inline-flex";
+      }
+
+      async function checkSessionUnlock() {
+        const savedPw = sessionStorage.getItem(SS_UNLOCK_PW);
+        if (!savedPw) {
+          state.unlockedPassword = null;
+          showLockedUI();
+          return false;
         }
-        state.user = null;
-        loginSection.style.display = "none";
-        protectedArea.style.display = "flex";
-        signOutBtn.style.display = "none";
-        return true;
+        try {
+          const valid = await verifyPassword(savedPw);
+          if (valid) {
+            state.unlockedPassword = savedPw;
+            showUnlockedUI();
+            return true;
+          }
+        } catch (err) {
+          console.error(err);
+        }
+        sessionStorage.removeItem(SS_UNLOCK_PW);
+        state.unlockedPassword = null;
+        showLockedUI();
+        return false;
       }
 
       function renderStats() {
         const statMode = document.getElementById("statMode");
-        const statUserEmail = document.getElementById("statUserEmail");
+        const statSubNote = document.getElementById("statSubNote");
         const statIcon = document.getElementById("statModeIcon");
-        const statusText = document.getElementById("consoleStatusText");
 
         if (activeMode === "supabase") {
           statMode.textContent = "SUPABASE LIVE";
-          statUserEmail.textContent = state.user ? state.user.email : "";
+          statSubNote.textContent = "Database Password Protected";
           statIcon.style.background = "var(--green)";
           statIcon.style.color = "#1b380b";
-          statusText.textContent = "ADMIN AUTHENTICATED";
         } else {
           statMode.textContent = "LOCAL DEMO";
-          statUserEmail.textContent = "Browser LocalStorage";
+          statSubNote.textContent = "Browser LocalStorage";
           statIcon.style.background = "var(--lavender)";
           statIcon.style.color = "#2b1742";
-          statusText.textContent = "LOCAL DEMO MODE";
         }
         document.getElementById("statShelves").textContent = String(state.shelves.length);
         document.getElementById("statBooks").textContent = String(state.books.length);
@@ -1655,7 +1827,7 @@ create policy "Admin write books"
       }
 
       async function refreshAll() {
-        const unlocked = await syncAuthGate();
+        const unlocked = await checkSessionUnlock();
         if (!unlocked) return;
         try {
           const data = await fetchLibrary();
@@ -1681,32 +1853,66 @@ create policy "Admin write books"
         document.getElementById("supaUrlInput").value = creds.url;
         document.getElementById("supaKeyInput").value = creds.key;
 
-        document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
+        // Unlock console form
+        document.getElementById("unlockForm").addEventListener("submit", async (e) => {
           e.preventDefault();
+          const pw = document.getElementById("consolePasswordInput").value;
           try {
-            const { error } = await supabaseClient.auth.signInWithPassword({
-              email: document.getElementById("adminEmail").value.trim(),
-              password: document.getElementById("adminPassword").value
-            });
-            if (error) throw error;
-            document.getElementById("adminPassword").value = "";
-            showToast("Signed in as admin!", "success");
+            const ok = await verifyPassword(pw);
+            if (!ok) {
+              showToast("Incorrect password", "error");
+              return;
+            }
+            sessionStorage.setItem(SS_UNLOCK_PW, pw);
+            document.getElementById("consolePasswordInput").value = "";
+            showToast("Console unlocked!", "success");
             await refreshAll();
           } catch (err) {
-            showToast(err.message || "Login failed", "error");
+            showToast(err.message || "Verification failed (run SQL Schema first)", "error");
           }
         });
 
-        document.getElementById("signOutBtn").addEventListener("click", async () => {
+        // Lock console button
+        document.getElementById("lockConsoleBtn").addEventListener("click", () => {
+          sessionStorage.removeItem(SS_UNLOCK_PW);
+          state.unlockedPassword = null;
+          showLockedUI();
+          showToast("Console locked", "info");
+        });
+
+        // Change password form
+        document.getElementById("openPasswordModalBtn").addEventListener("click", () => {
+          document.getElementById("changePasswordForm").reset();
+          openModal("changePasswordModal");
+        });
+
+        document.getElementById("changePasswordForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const oldPw = document.getElementById("oldPwInput").value;
+          const newPw = document.getElementById("newPwInput").value;
+          const confirmPw = document.getElementById("confirmPwInput").value;
+
+          if (newPw !== confirmPw) {
+            showToast("New passwords do not match", "error");
+            return;
+          }
+          if (!newPw.trim()) {
+            showToast("New password cannot be empty", "error");
+            return;
+          }
+
           try {
-            if (supabaseClient) await supabaseClient.auth.signOut();
-            showToast("Signed out", "info");
-            await refreshAll();
+            await changePassword(oldPw, newPw);
+            state.unlockedPassword = newPw;
+            sessionStorage.setItem(SS_UNLOCK_PW, newPw);
+            closeModal("changePasswordModal");
+            showToast("Password updated in database!", "success");
           } catch (err) {
-            showToast(err.message || "Sign out failed", "error");
+            showToast(err.message || "Failed to update password", "error");
           }
         });
 
+        // Shelf form
         document.getElementById("shelfForm").addEventListener("submit", async (e) => {
           e.preventDefault();
           const editId = document.getElementById("editShelfId").value;
@@ -1717,22 +1923,18 @@ create policy "Admin write books"
             description: document.getElementById("shelfDesc").value
           };
           try {
-            if (editId) {
-              await updateShelf(editId, payload);
-              showToast("Shelf updated!", "success");
-            } else {
-              await createShelf(payload);
-              showToast("New shelf created!", "success");
-            }
+            await saveShelf(editId || null, payload);
+            showToast(editId ? "Shelf updated!" : "New shelf created!", "success");
             resetShelfForm();
             await refreshAll();
           } catch (err) {
-            showToast(err.message || "Could not save shelf (check RLS/admin login)", "error");
+            showToast(err.message || "Could not save shelf", "error");
           }
         });
 
         document.getElementById("shelfCancelEditBtn").addEventListener("click", resetShelfForm);
 
+        // Book form
         document.getElementById("bookForm").addEventListener("submit", async (e) => {
           e.preventDefault();
           const shelfId = document.getElementById("bookShelfSelect").value;
@@ -1747,17 +1949,12 @@ create policy "Admin write books"
             download_url: document.getElementById("bookDownloadUrl").value
           };
           try {
-            if (editId) {
-              await updateBook(editId, payload);
-              showToast("Book updated!", "success");
-            } else {
-              await createBook(payload);
-              showToast("Book added to shelf!", "success");
-            }
+            await saveBook(editId || null, payload);
+            showToast(editId ? "Book updated!" : "Book added to shelf!", "success");
             resetBookForm();
             await refreshAll();
           } catch (err) {
-            showToast(err.message || "Could not save book (check RLS/admin login)", "error");
+            showToast(err.message || "Could not save book", "error");
           }
         });
 
@@ -1792,6 +1989,7 @@ create policy "Admin write books"
           e.preventDefault();
           localStorage.setItem(LS_SUPA_URL, document.getElementById("supaUrlInput").value.trim());
           localStorage.setItem(LS_SUPA_KEY, document.getElementById("supaKeyInput").value.trim());
+          sessionStorage.removeItem(SS_UNLOCK_PW);
           initClient();
           closeModal("supabaseModal");
           showToast("Connected to Supabase!", "success");
@@ -1801,6 +1999,7 @@ create policy "Admin write books"
         document.getElementById("disconnectSupaBtn").addEventListener("click", async () => {
           localStorage.removeItem(LS_SUPA_URL);
           localStorage.removeItem(LS_SUPA_KEY);
+          sessionStorage.removeItem(SS_UNLOCK_PW);
           document.getElementById("supaUrlInput").value = "";
           document.getElementById("supaKeyInput").value = "";
           initClient();

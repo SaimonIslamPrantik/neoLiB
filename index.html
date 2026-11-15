@@ -312,6 +312,7 @@
 
     body.dark-mode .tag { background: #2b1a3f; color: var(--lavender); }
     .tag.green { background: var(--green); color: #1b380b; }
+    .tag.coral { background: var(--coral); color: #ffffff; }
     .tag.cyan { background: var(--soft-cyan); color: #181124; }
 
     .pop-shell {
@@ -909,8 +910,8 @@
             <p class="stage-sub">Click any book cover on a shelf to open its download link.</p>
           </div>
           <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-            <span class="tag cyan" id="modeBadge">
-              <i class="fa-solid fa-database"></i> CHECKING...
+            <span class="tag green mono" id="libraryCountBadge">
+              <i class="fa-solid fa-database"></i> CONNECTING...
             </span>
           </div>
         </div>
@@ -927,65 +928,7 @@
       "use strict";
 
       const LS_THEME = "neolib_theme";
-      const LS_SUPA_URL = "neolib_supabase_url";
-      const LS_SUPA_KEY = "neolib_supabase_key";
-      const LS_DEMO_SHELVES = "neolib_demo_shelves_v1";
-      const LS_DEMO_BOOKS = "neolib_demo_books_v1";
-
-      const DEFAULT_SHELVES = [
-        {
-          id: "demo-shelf-1",
-          name: "System Design & Code",
-          code: "SH-01",
-          description: "Engineering handbooks, architecture blueprints, and clean programming manuals.",
-          accent: "lavender",
-          created_at: "2026-01-01T10:00:00Z"
-        },
-        {
-          id: "demo-shelf-2",
-          name: "Visual Arts & Zines",
-          code: "SH-02",
-          description: "Illustration monographs, grid typography guides, and tactile layout books.",
-          accent: "green",
-          created_at: "2026-01-02T10:00:00Z"
-        }
-      ];
-
-      const DEFAULT_BOOKS = [
-        {
-          id: "demo-book-1",
-          shelf_id: "demo-shelf-1",
-          title: "Designing Data-Intensive Apps",
-          author: "Sample Archive",
-          format: "PDF",
-          thumbnail_url: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=420&q=80",
-          download_url: "https://example.com/sample-book-1.pdf",
-          created_at: "2026-01-03T10:00:00Z"
-        },
-        {
-          id: "demo-book-2",
-          shelf_id: "demo-shelf-1",
-          title: "The Pragmatic Field Guide",
-          author: "Sample Archive",
-          format: "EPUB",
-          thumbnail_url: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=420&q=80",
-          download_url: "https://example.com/sample-book-2.epub",
-          created_at: "2026-01-04T10:00:00Z"
-        },
-        {
-          id: "demo-book-3",
-          shelf_id: "demo-shelf-2",
-          title: "Grid Systems in Neo-Print",
-          author: "Sample Archive",
-          format: "PDF",
-          thumbnail_url: "https://images.unsplash.com/photo-1589998059171-988d887df646?auto=format&fit=crop&w=420&q=80",
-          download_url: "https://example.com/sample-book-3.pdf",
-          created_at: "2026-01-05T10:00:00Z"
-        }
-      ];
-
       let supabaseClient = null;
-      let activeMode = "demo";
       let state = { shelves: [], books: [], selectedShelfId: "ALL", searchQuery: "" };
 
       function escapeHtml(str) {
@@ -1047,37 +990,27 @@
 
       function initClient() {
         const env = window.NEOLIB_ENV || {};
-        const url = (env.SUPABASE_URL || localStorage.getItem(LS_SUPA_URL) || "").trim();
-        const key = (env.SUPABASE_ANON_KEY || localStorage.getItem(LS_SUPA_KEY) || "").trim();
+        const url = String(env.SUPABASE_URL || "").trim();
+        const key = String(env.SUPABASE_ANON_KEY || "").trim();
         if (url && key && window.supabase && typeof window.supabase.createClient === "function") {
-          try {
-            supabaseClient = window.supabase.createClient(url, key);
-            activeMode = "supabase";
-            return;
-          } catch (err) {
-            console.error(err);
-          }
+          supabaseClient = window.supabase.createClient(url, key);
+          return true;
         }
         supabaseClient = null;
-        activeMode = "demo";
-        if (!localStorage.getItem(LS_DEMO_SHELVES)) localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(DEFAULT_SHELVES));
-        if (!localStorage.getItem(LS_DEMO_BOOKS)) localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(DEFAULT_BOOKS));
+        return false;
       }
 
       async function fetchLibrary() {
-        if (activeMode === "supabase" && supabaseClient) {
-          const [shelvesRes, booksRes] = await Promise.all([
-            supabaseClient.from("shelves").select("*").order("created_at", { ascending: true }),
-            supabaseClient.from("books").select("*").order("created_at", { ascending: true })
-          ]);
-          if (shelvesRes.error) throw shelvesRes.error;
-          if (booksRes.error) throw booksRes.error;
-          return { shelves: shelvesRes.data || [], books: booksRes.data || [] };
+        if (!supabaseClient) {
+          throw new Error("Supabase environment secrets (SUPABASE_URL / SUPABASE_ANON_KEY) are not configured.");
         }
-        return {
-          shelves: JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]"),
-          books: JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]")
-        };
+        const [shelvesRes, booksRes] = await Promise.all([
+          supabaseClient.from("shelves").select("*").order("created_at", { ascending: true }),
+          supabaseClient.from("books").select("*").order("created_at", { ascending: true })
+        ]);
+        if (shelvesRes.error) throw shelvesRes.error;
+        if (booksRes.error) throw booksRes.error;
+        return { shelves: shelvesRes.data || [], books: booksRes.data || [] };
       }
 
       function renderBookCardHtml(book, shelfAccent = "lavender") {
@@ -1123,17 +1056,17 @@
       }
 
       function updateStatusIndicators() {
-        const modeBadge = document.getElementById("modeBadge");
+        const badge = document.getElementById("libraryCountBadge");
         const total = state.books.length;
-
-        if (activeMode === "supabase") {
-          modeBadge.className = "tag green";
-          modeBadge.innerHTML = '<i class="fa-solid fa-bolt"></i> SUPABASE LIVE';
-        } else {
-          modeBadge.className = "tag cyan";
-          modeBadge.innerHTML = '<i class="fa-solid fa-flask"></i> LOCAL DEMO MODE';
-        }
         document.getElementById("totalBooksBadge").textContent = String(total);
+
+        if (supabaseClient) {
+          badge.className = "tag green mono";
+          badge.innerHTML = `<i class="fa-solid fa-database"></i> ${state.shelves.length} SHELVES // ${total} BOOKS`;
+        } else {
+          badge.className = "tag coral mono";
+          badge.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> NOT DEPLOYED';
+        }
       }
 
       function renderFolderRack() {
@@ -1169,7 +1102,7 @@
             </button>`;
         }
 
-        if (state.shelves.length === 0) {
+        if (state.shelves.length === 0 && supabaseClient) {
           html += `<div style="border:2px dashed var(--placeholder-border); padding:14px; font-size:0.85rem; color:var(--text-muted);">No shelves yet. Open <strong>Console</strong> to create your first document shelf.</div>`;
         }
 
@@ -1187,6 +1120,20 @@
         const container = document.getElementById("shelvesContainer");
         const stageHeading = document.getElementById("stageHeading");
         const q = state.searchQuery.trim().toLowerCase();
+
+        if (!supabaseClient) {
+          container.innerHTML = `
+            <div class="pop-shell" data-stamp="✦ CONFIG REQUIRED">
+              <div class="slide-card" style="text-align:center; padding:42px 24px;">
+                <i class="fa-solid fa-key" style="font-size:2.4rem; margin-bottom:12px;"></i>
+                <h3 style="margin:0 0 8px;">Supabase Secrets Not Injected</h3>
+                <p style="color:var(--text-muted); margin:0;">
+                  Deploy this site via <strong>GitHub Actions</strong> with your <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> repository secrets.
+                </p>
+              </div>
+            </div>`;
+          return;
+        }
 
         let shelvesToShow = state.shelves;
         if (state.selectedShelfId !== "ALL") {
@@ -1282,6 +1229,12 @@
       }
 
       async function loadData(showFeedback = false) {
+        if (!supabaseClient) {
+          updateStatusIndicators();
+          renderFolderRack();
+          renderShelves();
+          return;
+        }
         try {
           const data = await fetchLibrary();
           state.shelves = data.shelves;

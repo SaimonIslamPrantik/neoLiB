@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>neoLiB — Backend Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Darumadrop+One&family=Hanken+Grotesk:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root {
+      --lavender: #e3d7ff;
+      --green: #95e06c;
+      --coral: #ff5a5f;
+      --deep-purple: #4c2c72;
+      --soft-cyan: #7ee8fa;
+
+      --bg-page: #f0f7ee;
+      --grid-line-color: rgba(149, 224, 108, 0.28);
+      --card-bg: #ffffff;
+      --text-main: #4c2c72;
+      --text-muted: #745b91;
+      --border-crisp: #4c2c72;
+
+      --placeholder-bg: #e3d7ff;
+      --placeholder-border: rgba(76, 44, 114, 0.35);
+      --placeholder-stamp: rgba(76, 44, 114, 0.42);
+
+      --glow-top: rgba(227, 215, 255, 0.85);
+      --glow-mid: rgba(126, 232, 250, 0.3);
+      --surface-subtle: #faf8fd;
+      --book-pages: #f7f2ff;
+
+      --spring-slide: cubic-bezier(0.2, 0.9, 0.3, 1.25);
+    }
+
+    body.dark-mode {
+      --bg-page: #0e1410;
+      --grid-line-color: rgba(149, 224, 108, 0.14);
+      --card-bg: #181124;
+      --text-main: #f0eaff;
+      --text-muted: #b49fcf;
+      --border-crisp: #885bc4;
+
+      --placeholder-bg: #2d1d42;
+      --placeholder-border: rgba(227, 215, 255, 0.3);
+      --placeholder-stamp: rgba(227, 215, 255, 0.35);
+
+      --glow-top: rgba(136, 91, 196, 0.35);
+      --glow-mid: rgba(126, 232, 250, 0.12);
+      --surface-subtle: #221733;
+      --book-pages: #261b38;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      border-radius: 0 !important;
+    }
+
+    .status-bubble,
+    .status-bubble-tail,
+    .status-bubble-dot,
+    .sound-bar {
+      border-radius: 9999px !important;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    body {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-weight: 500;
+      line-height: 1.55;
+      letter-spacing: -0.2px;
+      background-color: var(--bg-page);
+      background-image:
+        linear-gradient(to right, var(--grid-line-color) 1.5px, transparent 1.5px),
+        linear-gradient(to bottom, var(--grid-line-color) 1.5px, transparent 1.5px);
+      background-size: 26px 26px;
+      color: var(--text-main);
+      overflow-x: hidden;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 96vw;
+      max-width: 1600px;
+      height: 520px;
+      background: radial-gradient(
+        ellipse at top,
+        var(--glow-top) 0%,
+        var(--glow-mid) 45%,
+        transparent 75%
+      );
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(32px);
+    }
+
+    button, input, textarea, select { font-family: 'Hanken Grotesk', sans-serif; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+
+    .theme-toggle-fixed {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      width: 38px;
+      height: 38px;
+      z-index: 1000;
+      background: var(--card-bg);
+      border: 2px solid var(--border-crisp);
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      box-shadow: 3px 3px 0 var(--border-crisp);
+      transition: transform 0.18s var(--spring-slide), background-color 0.2s ease, color 0.2s ease, box-shadow 0.18s ease;
+    }
+
+    .theme-toggle-fixed:hover,
+    .theme-toggle-fixed:focus-visible {
+      transform: translate(-2px, -2px);
+      background: var(--soft-cyan);
+      color: #181124;
+      box-shadow: 5px 5px 0 var(--border-crisp);
+      outline: none;
+    }
+
+    .app-fullscreen {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      width: 100%;
+      background: var(--card-bg);
+      border-bottom: 2px solid var(--border-crisp);
+      padding: 12px 72px 12px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 4px 0 var(--placeholder-bg);
+    }
+
+    .brand-cluster { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .brand-link { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; color: var(--text-main); }
+
+    .brand-badge {
+      width: 42px;
+      height: 42px;
+      background: var(--lavender);
+      color: #2b1742;
+      border: 2px solid var(--border-crisp);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      box-shadow: 3px 3px 0 var(--border-crisp);
+    }
+
+    .brand-title {
+      font-family: 'Darumadrop One', cursive, sans-serif;
+      font-size: 2rem;
+      font-weight: 400;
+      letter-spacing: 0.8px;
+      line-height: 1;
+      margin: 0;
+      color: var(--text-main);
+    }
+
+    .status-wrap { position: relative; display: inline-flex; align-items: center; }
+
+    .status-bubble {
+      background: #25143a;
+      color: #f0eaff;
+      border: 2px solid var(--border-crisp);
+      padding: 5px 14px;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      animation: floatBubble 3.2s ease-in-out infinite;
+      box-shadow: 3px 3px 0 var(--placeholder-bg);
+    }
+
+    .status-bubble-tail {
+      width: 10px;
+      height: 10px;
+      background: #25143a;
+      border: 2px solid var(--border-crisp);
+      position: absolute;
+      left: -6px;
+      bottom: -5px;
+    }
+
+    .status-bubble-dot {
+      width: 5px;
+      height: 5px;
+      background: #25143a;
+      border: 1.5px solid var(--border-crisp);
+      position: absolute;
+      left: -12px;
+      bottom: -9px;
+    }
+
+    .equalizer { display: inline-flex; align-items: flex-end; gap: 2px; height: 12px; }
+    .sound-bar { width: 3px; background: var(--green); animation: eqPulse 1.1s ease-in-out infinite; }
+    .sound-bar:nth-child(2) { animation-delay: 0.2s; }
+    .sound-bar:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes eqPulse { 0%, 100% { height: 4px; } 50% { height: 12px; } }
+    @keyframes floatBubble { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+
+    .topbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .cozy-btn {
+      background: var(--card-bg);
+      border: 2px solid var(--border-crisp);
+      color: var(--text-main);
+      padding: 8px 16px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+      box-shadow: 3px 3px 0 var(--border-crisp);
+      transition: transform 0.18s var(--spring-slide), background-color 0.2s ease, color 0.2s ease, box-shadow 0.18s ease;
+    }
+
+    .cozy-btn:hover,
+    .cozy-btn:focus-visible {
+      transform: translate(-2px, -2px);
+      background: var(--soft-cyan);
+      color: #181124;
+      box-shadow: 5px 5px 0 var(--border-crisp);
+      outline: none;
+    }
+
+    .cozy-btn:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--border-crisp); }
+    .cozy-btn.primary { background: var(--green); color: #1b380b; }
+    .cozy-btn.primary:hover, .cozy-btn.primary:focus-visible { background: var(--soft-cyan); color: #181124; }
+    .cozy-btn.danger { background: var(--coral); color: #ffffff; }
+    .cozy-btn.danger:hover, .cozy-btn.danger:focus-visible { background: #ff3b41; color: #ffffff; }
+    .cozy-btn.lavender { background: var(--lavender); color: #2b1742; }
+    .cozy-btn.sm { padding: 5px 10px; font-size: 0.8rem; }
+
+    .cozy-input {
+      width: 100%;
+      background: var(--surface-subtle);
+      border: 2px solid var(--border-crisp);
+      color: var(--text-main);
+      padding: 9px 13px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      outline: none;
+      transition: transform 0.18s var(--spring-slide), box-shadow 0.18s ease, background-color 0.2s ease;
+    }
+
+    .cozy-input::placeholder { color: var(--text-muted); opacity: 0.75; }
+    .cozy-input:focus {
+      background: var(--card-bg);
+      transform: translate(-2px, -2px);
+      box-shadow: 4px 4px 0 var(--border-crisp);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      background: var(--lavender);
+      color: #2b1742;
+      border: 1.5px solid var(--border-crisp);
+    }
+
+    body.dark-mode .tag { background: #2b1a3f; color: var(--lavender); }
+    .tag.green { background: var(--green); color: #1b380b; }
+    .tag.coral { background: var(--coral); color: #ffffff; }
+    .tag.cyan { background: var(--soft-cyan); color: #181124; }
+
+    .pop-shell {
+      position: relative;
+      background-color: var(--placeholder-bg);
+      border: 2px dashed var(--placeholder-border);
+      margin-top: 10px;
+      margin-left: 10px;
+      transition: background-color 0.25s ease;
+    }
+
+    .pop-shell::after {
+      content: attr(data-stamp);
+      position: absolute;
+      right: 12px;
+      bottom: 10px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--placeholder-stamp);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .slide-card {
+      position: relative;
+      background: var(--card-bg);
+      border: 2px solid var(--border-crisp);
+      width: 100%;
+      z-index: 1;
+      transition: transform 0.22s var(--spring-slide), box-shadow 0.22s ease, background-color 0.25s ease, border-color 0.25s ease;
+    }
+
+    .pop-shell:hover > .slide-card,
+    .pop-shell:focus-within > .slide-card {
+      transform: translate(-10px, -10px);
+      box-shadow: 4px 4px 20px rgba(0, 0, 0, 0.22);
+    }
+
+    .console-workspace {
+      padding: 24px 28px 70px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    .console-stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 20px;
+    }
+
+    .stat-card-inner {
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+
+    .stat-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 1.75rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--text-muted);
+    }
+
+    .stat-icon-box {
+      width: 44px;
+      height: 44px;
+      background: var(--lavender);
+      color: #2b1742;
+      border: 2px solid var(--border-crisp);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+    }
+
+    .console-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.35fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .panel-inner { padding: 20px 22px; }
+
+    .panel-title {
+      margin: 0 0 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border-crisp);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+
+    .form-grid { display: flex; flex-direction: column; gap: 14px; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .field-group { display: flex; flex-direction: column; gap: 5px; }
+
+    .field-label {
+      font-size: 0.8rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .book-builder-split {
+      display: grid;
+      grid-template-columns: 1fr 170px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .preview-box-label {
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    /* Hardcover Preview Card */
+    .book-card-link {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: var(--text-main);
+      position: relative;
+    }
+
+    .book-physical {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      background: var(--card-bg);
+      border: 2px solid var(--border-crisp);
+      box-shadow: 4px 4px 0 var(--book-pages), 6px 6px 0 var(--border-crisp);
+    }
+
+    .book-spine {
+      width: 16px;
+      flex-shrink: 0;
+      background: var(--lavender);
+      border-right: 2px solid var(--border-crisp);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+    }
+
+    .book-spine.accent-green { background: var(--green); }
+    .book-spine.accent-cyan { background: var(--soft-cyan); }
+    .book-spine.accent-coral { background: var(--coral); }
+    body.dark-mode .book-spine.accent-lavender { background: #3b2659; }
+
+    .spine-groove { width: 8px; height: 2px; background: var(--border-crisp); }
+
+    .book-cover-frame {
+      position: relative;
+      flex: 1;
+      background: #181124;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .book-cover-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    .book-cover-fallback {
+      width: 100%;
+      height: 100%;
+      padding: 14px;
+      background: var(--surface-subtle);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 8px;
+    }
+
+    .book-cover-fallback i { font-size: 2rem; color: var(--border-crisp); }
+    .book-cover-fallback span { font-weight: 800; font-size: 0.84rem; line-height: 1.25; }
+
+    .book-dl-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 30px;
+      height: 30px;
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 2px solid var(--border-crisp);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      box-shadow: 2px 2px 0 var(--border-crisp);
+    }
+
+    .book-format-badge {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: #181124;
+      color: var(--lavender);
+      border: 1.5px solid var(--lavender);
+      padding: 2px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.68rem;
+      font-weight: 800;
+    }
+
+    .book-label-plate {
+      margin-top: 14px;
+      padding: 8px 10px;
+      background: var(--surface-subtle);
+      border: 2px solid var(--border-crisp);
+      box-shadow: 3px 3px 0 var(--placeholder-bg);
+    }
+
+    .book-title-text {
+      font-weight: 800;
+      font-size: 0.9rem;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .book-author-text {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Tables & Lists */
+    .table-scroll { width: 100%; overflow-x: auto; }
+    .neo-table { width: 100%; border-collapse: collapse; background: var(--card-bg); }
+    .neo-table th, .neo-table td { border: 2px solid var(--border-crisp); padding: 10px 12px; text-align: left; vertical-align: middle; }
+    .neo-table th { background: var(--placeholder-bg); font-weight: 800; font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    .neo-table tr:hover td { background: var(--surface-subtle); }
+
+    .thumb-mini {
+      width: 38px;
+      height: 54px;
+      object-fit: cover;
+      border: 2px solid var(--border-crisp);
+      display: block;
+      background: var(--surface-subtle);
+    }
+
+    .shelf-pill-list { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; }
+
+    .shelf-manage-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--surface-subtle);
+      border: 2px solid var(--border-crisp);
+    }
+
+    .shelf-manage-meta { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .row-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    /* Lightbox Modals */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(14, 20, 16, 0.92);
+      backdrop-filter: blur(8px);
+      z-index: 2000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 26px;
+    }
+
+    .modal-overlay.open { display: flex; }
+
+    .modal-box {
+      position: relative;
+      width: min(100%, 640px);
+      max-height: 90vh;
+      background: var(--card-bg);
+      border: 4px solid var(--border-crisp);
+      outline: 3px solid var(--card-bg);
+      padding: 24px;
+      overflow: visible;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-scroll-area {
+      overflow-y: auto;
+      max-height: 70vh;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .modal-close-protrude {
+      position: absolute;
+      top: -18px;
+      right: -18px;
+      width: 36px;
+      height: 36px;
+      background: var(--coral);
+      color: #ffffff;
+      border: 2px solid var(--border-crisp);
+      box-shadow: 3px 3px 0 var(--border-crisp);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      z-index: 10;
+      transition: transform 0.18s var(--spring-slide);
+    }
+
+    .modal-close-protrude:hover { transform: translate(-2px, -2px); }
+
+    pre.sql-block {
+      background: #1b1229;
+      color: #f0eaff;
+      border: 2px solid var(--border-crisp);
+      box-shadow: 3px 3px 0 var(--placeholder-bg);
+      padding: 14px;
+      font-size: 0.78rem;
+      overflow-x: auto;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .toast-stack {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 3000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 340px;
+    }
+
+    .toast-item {
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 2px solid var(--border-crisp);
+      box-shadow: 4px 4px 0 var(--border-crisp);
+      padding: 11px 15px;
+      font-weight: 800;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastPop 0.22s var(--spring-slide);
+    }
+
+    .toast-item.success { border-left: 8px solid var(--green); }
+    .toast-item.error { border-left: 8px solid var(--coral); }
+    .toast-item.info { border-left: 8px solid var(--soft-cyan); }
+
+    @keyframes toastPop {
+      from { opacity: 0; transform: translate(12px, 12px); }
+      to { opacity: 1; transform: translate(0, 0); }
+    }
+
+    @media (max-width: 1040px) { .console-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 860px) { .console-workspace { padding: 18px 16px 50px; } }
+    @media (max-width: 600px) {
+      .topbar { padding: 12px 64px 12px 14px; }
+      .book-builder-split, .form-row-2 { grid-template-columns: 1fr; }
+      .status-wrap { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <button id="themeToggleBtn" class="theme-toggle-fixed" type="button" aria-label="Toggle Light/Dark Mode">
+    <i class="fa-solid fa-moon"></i>
+  </button>
+
+  <div class="app-fullscreen">
+    <header class="topbar">
+      <div class="brand-cluster">
+        <a href="index.html" class="brand-link">
+          <span class="brand-badge"><i class="fa-solid fa-sliders"></i></span>
+          <h1 class="brand-title">neoLiB</h1>
+        </a>
+
+        <div class="status-wrap">
+          <div class="status-bubble">
+            <span class="equalizer" aria-hidden="true">
+              <span class="sound-bar"></span>
+              <span class="sound-bar"></span>
+              <span class="sound-bar"></span>
+            </span>
+            <span id="consoleStatusText">BACKEND CONSOLE</span>
+          </div>
+          <span class="status-bubble-tail" aria-hidden="true"></span>
+          <span class="status-bubble-dot" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <div class="topbar-controls">
+        <button id="signOutBtn" class="cozy-btn danger" type="button" style="display:none;">
+          <i class="fa-solid fa-right-from-bracket"></i>
+          <span>Sign Out</span>
+        </button>
+        <button id="openSupabaseModalBtn" class="cozy-btn lavender" type="button">
+          <i class="fa-solid fa-database"></i>
+          <span>Supabase Config</span>
+        </button>
+        <button id="openSqlModalBtn" class="cozy-btn" type="button">
+          <i class="fa-solid fa-code"></i>
+          <span>SQL Schema</span>
+        </button>
+        <a href="index.html" class="cozy-btn primary">
+          <i class="fa-solid fa-book-open"></i>
+          <span>View Shelves</span>
+        </a>
+      </div>
+    </header>
+
+    <main class="console-workspace">
+      <!-- Admin Auth Gate (Shown in Supabase Mode until signed in) -->
+      <section id="adminLoginSection" class="pop-shell" data-stamp="✦ ADMIN AUTH" style="display:none; max-width:540px; margin:20px auto; width:100%;">
+        <div class="slide-card panel-inner">
+          <h2 class="panel-title">
+            <span><i class="fa-solid fa-lock"></i> Admin Sign In</span>
+            <span class="tag cyan mono">SUPABASE AUTH</span>
+          </h2>
+          <p style="margin:0 0 14px; font-size:0.9rem; color:var(--text-muted);">
+            Sign in with your Supabase Auth admin email and password to create, edit, or delete shelves and books.
+          </p>
+          <form id="adminLoginForm" class="form-grid">
+            <div class="field-group">
+              <label class="field-label" for="adminEmail">Admin Email</label>
+              <input id="adminEmail" class="cozy-input" type="email" required placeholder="admin@example.com" />
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="adminPassword">Password</label>
+              <input id="adminPassword" class="cozy-input" type="password" required placeholder="••••••••" />
+            </div>
+            <button class="cozy-btn primary" type="submit">
+              <i class="fa-solid fa-key"></i>
+              <span>Unlock Console</span>
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Main Console Area -->
+      <div id="consoleProtectedArea" style="display:flex; flex-direction:column; gap:28px;">
+        <section class="console-stats-row" aria-label="Library Telemetry">
+          <div class="pop-shell" data-stamp="✦ MODE">
+            <div class="slide-card stat-card-inner">
+              <div>
+                <div class="stat-label">Backend Link</div>
+                <div class="stat-value" id="statMode" style="font-size:1.15rem; margin-top:4px;">DEMO</div>
+                <div class="mono" id="statUserEmail" style="font-size:0.74rem; color:var(--text-muted); margin-top:2px;"></div>
+              </div>
+              <div class="stat-icon-box" id="statModeIcon"><i class="fa-solid fa-plug"></i></div>
+            </div>
+          </div>
+
+          <div class="pop-shell" data-stamp="✦ FOLDERS">
+            <div class="slide-card stat-card-inner">
+              <div>
+                <div class="stat-label">Document Shelves</div>
+                <div class="stat-value" id="statShelves">0</div>
+              </div>
+              <div class="stat-icon-box" style="background:var(--green); color:#1b380b;">
+                <i class="fa-solid fa-folder-open"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="pop-shell" data-stamp="✦ VOLUMES">
+            <div class="slide-card stat-card-inner">
+              <div>
+                <div class="stat-label">Indexed Books</div>
+                <div class="stat-value" id="statBooks">0</div>
+              </div>
+              <div class="stat-icon-box" style="background:var(--soft-cyan); color:#181124;">
+                <i class="fa-solid fa-book"></i>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="console-grid">
+          <div class="pop-shell" data-stamp="✦ SHELF MANAGER">
+            <div class="slide-card panel-inner">
+              <h2 class="panel-title">
+                <span id="shelfFormHeading"><i class="fa-solid fa-folder-plus"></i> Create New Shelf</span>
+                <span class="tag mono" id="shelfFormModeTag">NEW</span>
+              </h2>
+
+              <form id="shelfForm" class="form-grid">
+                <input type="hidden" id="editShelfId" value="" />
+
+                <div class="form-row-2">
+                  <div class="field-group">
+                    <label class="field-label" for="shelfName">Shelf Name *</label>
+                    <input id="shelfName" class="cozy-input" type="text" required placeholder="e.g. Cyberpunk Fiction" />
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label" for="shelfCode">Folder Code</label>
+                    <input id="shelfCode" class="cozy-input mono" type="text" placeholder="e.g. SH-03" value="SH-01" />
+                  </div>
+                </div>
+
+                <div class="form-row-2">
+                  <div class="field-group">
+                    <label class="field-label" for="shelfAccent">Folder &amp; Spine Color</label>
+                    <select id="shelfAccent" class="cozy-input">
+                      <option value="lavender">Lavender Pastel</option>
+                      <option value="green">Mint Green</option>
+                      <option value="cyan">Soft Cyan</option>
+                      <option value="coral">Coral Accent</option>
+                    </select>
+                  </div>
+                  <div class="field-group">
+                    <label class="field-label" for="shelfDesc">Short Description</label>
+                    <input id="shelfDesc" class="cozy-input" type="text" placeholder="Optional shelf notes..." />
+                  </div>
+                </div>
+
+                <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                  <button id="shelfSubmitBtn" class="cozy-btn primary" type="submit">
+                    <i class="fa-solid fa-plus"></i><span>Create Shelf</span>
+                  </button>
+                  <button id="shelfCancelEditBtn" class="cozy-btn" type="button" style="display:none;">
+                    <i class="fa-solid fa-xmark"></i><span>Cancel Edit</span>
+                  </button>
+                </div>
+              </form>
+
+              <div class="shelf-pill-list" id="shelfManageList"></div>
+            </div>
+          </div>
+
+          <div class="pop-shell" data-stamp="✦ BOOK PUBLISHER">
+            <div class="slide-card panel-inner">
+              <h2 class="panel-title">
+                <span id="bookFormHeading"><i class="fa-solid fa-book-medical"></i> Add Book to Shelf</span>
+                <span class="tag green mono" id="bookFormModeTag">NEW BOOK</span>
+              </h2>
+
+              <div class="book-builder-split">
+                <form id="bookForm" class="form-grid">
+                  <input type="hidden" id="editBookId" value="" />
+
+                  <div class="field-group">
+                    <label class="field-label" for="bookShelfSelect">Target Document Shelf *</label>
+                    <select id="bookShelfSelect" class="cozy-input" required>
+                      <option value="">-- Select a Shelf --</option>
+                    </select>
+                  </div>
+
+                  <div class="field-group">
+                    <label class="field-label" for="bookTitle">Book Title *</label>
+                    <input id="bookTitle" class="cozy-input" type="text" required placeholder="e.g. Neuromancer" />
+                  </div>
+
+                  <div class="form-row-2">
+                    <div class="field-group">
+                      <label class="field-label" for="bookAuthor">Author / Subtitle</label>
+                      <input id="bookAuthor" class="cozy-input" type="text" placeholder="e.g. William Gibson" />
+                    </div>
+                    <div class="field-group">
+                      <label class="field-label" for="bookFormat">Format Tag</label>
+                      <input id="bookFormat" class="cozy-input mono" type="text" value="PDF" placeholder="PDF / EPUB" />
+                    </div>
+                  </div>
+
+                  <div class="field-group">
+                    <label class="field-label" for="bookThumbUrl">Thumbnail Cover Image URL</label>
+                    <input id="bookThumbUrl" class="cozy-input mono" type="url" placeholder="https://.../cover.jpg" />
+                  </div>
+
+                  <div class="field-group">
+                    <label class="field-label" for="bookDownloadUrl">Download Link URL *</label>
+                    <input id="bookDownloadUrl" class="cozy-input mono" type="url" required placeholder="https://.../book.pdf" />
+                  </div>
+
+                  <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                    <button id="bookSubmitBtn" class="cozy-btn primary" type="submit">
+                      <i class="fa-solid fa-plus"></i><span>Add Book to Shelf</span>
+                    </button>
+                    <button id="bookCancelEditBtn" class="cozy-btn" type="button" style="display:none;">
+                      <i class="fa-solid fa-xmark"></i><span>Cancel Edit</span>
+                    </button>
+                  </div>
+                </form>
+
+                <div>
+                  <div class="preview-box-label">Live Book Preview</div>
+                  <div id="liveBookPreview"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="pop-shell" data-stamp="✦ INVENTORY">
+          <div class="slide-card panel-inner">
+            <div class="panel-title" style="flex-wrap:wrap;">
+              <span><i class="fa-solid fa-table-list"></i> Book Inventory</span>
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <select id="filterShelfSelect" class="cozy-input" style="width:auto; min-width:190px; padding:6px 10px;">
+                  <option value="ALL">Filter: All Shelves</option>
+                </select>
+                <input id="inventorySearch" class="cozy-input" type="search" placeholder="Filter books..." style="width:210px; padding:6px 10px;" />
+              </div>
+            </div>
+
+            <div class="table-scroll">
+              <table class="neo-table">
+                <thead>
+                  <tr>
+                    <th>Cover</th>
+                    <th>Title &amp; Author</th>
+                    <th>Document Shelf</th>
+                    <th>Format</th>
+                    <th>Download Link</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="inventoryTableBody"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!-- Supabase Config Modal -->
+  <div class="modal-overlay" id="supabaseModal" role="dialog" aria-modal="true" aria-labelledby="supaModalTitle">
+    <div class="modal-box">
+      <button class="modal-close-protrude" type="button" data-close-modal="supabaseModal" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h2 id="supaModalTitle" style="margin:0; font-size:1.3rem;">
+        <i class="fa-solid fa-database"></i> Supabase Connection
+      </h2>
+      <div class="modal-scroll-area">
+        <p style="margin:0; font-size:0.9rem; color:var(--text-muted);">
+          On GitHub Pages, your secrets are injected automatically during deployment. You can also test locally using browser storage below.
+        </p>
+        <form id="supabaseConfigForm" class="form-grid">
+          <div class="field-group">
+            <label class="field-label" for="supaUrlInput">Supabase Project URL</label>
+            <input id="supaUrlInput" class="cozy-input mono" type="url" placeholder="https://xyzcompany.supabase.co" required />
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="supaKeyInput">Supabase Anon / Publishable Key</label>
+            <input id="supaKeyInput" class="cozy-input mono" type="text" placeholder="eyJhbGciOi... or sb_publishable_..." required />
+          </div>
+          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;">
+            <button class="cozy-btn primary" type="submit"><i class="fa-solid fa-plug-circle-check"></i> Save &amp; Connect</button>
+            <button id="disconnectSupaBtn" class="cozy-btn danger" type="button"><i class="fa-solid fa-plug-circle-xmark"></i> Clear Local Override</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- SQL Schema Modal -->
+  <div class="modal-overlay" id="sqlModal" role="dialog" aria-modal="true" aria-labelledby="sqlModalTitle">
+    <div class="modal-box">
+      <button class="modal-close-protrude" type="button" data-close-modal="sqlModal" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h2 id="sqlModalTitle" style="margin:0; font-size:1.3rem;">
+        <i class="fa-solid fa-code"></i> Supabase SQL Setup Script
+      </h2>
+      <div class="modal-scroll-area">
+        <p style="margin:0; font-size:0.88rem; color:var(--text-muted);">
+          Run this in Supabase &rarr; <strong>SQL Editor</strong>. Replace <code>your-admin-email@example.com</code> with your Supabase Auth user email.
+        </p>
+        <pre class="sql-block" id="sqlScriptText">create extension if not exists pgcrypto;
+
+create table if not exists public.shelves (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  code text not null default 'SH-01',
+  description text not null default '',
+  accent text not null default 'lavender',
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.books (
+  id uuid primary key default gen_random_uuid(),
+  shelf_id uuid not null references public.shelves(id) on delete cascade,
+  title text not null,
+  author text not null default '',
+  format text not null default 'PDF',
+  thumbnail_url text not null default '',
+  download_url text not null,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_books_shelf_id on public.books(shelf_id);
+
+alter table public.shelves enable row level security;
+alter table public.books enable row level security;
+
+create policy "Allow public read shelves"
+  on public.shelves for select to anon, authenticated using (true);
+
+create policy "Allow public read books"
+  on public.books for select to anon, authenticated using (true);
+
+create policy "Admin write shelves"
+  on public.shelves for all to authenticated
+  using ((auth.jwt() ->> 'email') = 'your-admin-email@example.com')
+  with check ((auth.jwt() ->> 'email') = 'your-admin-email@example.com');
+
+create policy "Admin write books"
+  on public.books for all to authenticated
+  using ((auth.jwt() ->> 'email') = 'your-admin-email@example.com')
+  with check ((auth.jwt() ->> 'email') = 'your-admin-email@example.com');</pre>
+        <div>
+          <button id="copySqlBtn" class="cozy-btn primary" type="button">
+            <i class="fa-solid fa-copy"></i> Copy SQL Script
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Delete Modal -->
+  <div class="modal-overlay" id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal-box" style="max-width:440px;">
+      <button class="modal-close-protrude" type="button" data-close-modal="confirmModal" aria-label="Close">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+      <h2 id="confirmTitle" style="margin:0; font-size:1.25rem;">
+        <i class="fa-solid fa-triangle-exclamation"></i> Confirm Removal
+      </h2>
+      <p id="confirmMessage" style="margin:0; font-size:0.95rem;"></p>
+      <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:8px;">
+        <button class="cozy-btn" type="button" data-close-modal="confirmModal">Cancel</button>
+        <button id="confirmActionBtn" class="cozy-btn danger" type="button"><i class="fa-solid fa-trash"></i> Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase JS UMD v2 + Deploy-Time Secret Injection Target -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script id="neolib-env">window.NEOLIB_ENV = { SUPABASE_URL: "", SUPABASE_ANON_KEY: "" };</script>
+  <script>
+    (function () {
+      "use strict";
+
+      const LS_THEME = "neolib_theme";
+      const LS_SUPA_URL = "neolib_supabase_url";
+      const LS_SUPA_KEY = "neolib_supabase_key";
+      const LS_DEMO_SHELVES = "neolib_demo_shelves_v1";
+      const LS_DEMO_BOOKS = "neolib_demo_books_v1";
+
+      const DEFAULT_SHELVES = [
+        {
+          id: "demo-shelf-1",
+          name: "System Design & Code",
+          code: "SH-01",
+          description: "Engineering handbooks, architecture blueprints, and clean programming manuals.",
+          accent: "lavender",
+          created_at: "2026-01-01T10:00:00Z"
+        },
+        {
+          id: "demo-shelf-2",
+          name: "Visual Arts & Zines",
+          code: "SH-02",
+          description: "Illustration monographs, grid typography guides, and tactile layout books.",
+          accent: "green",
+          created_at: "2026-01-02T10:00:00Z"
+        }
+      ];
+
+      const DEFAULT_BOOKS = [
+        {
+          id: "demo-book-1",
+          shelf_id: "demo-shelf-1",
+          title: "Designing Data-Intensive Apps",
+          author: "Sample Archive",
+          format: "PDF",
+          thumbnail_url: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=420&q=80",
+          download_url: "https://example.com/sample-book-1.pdf",
+          created_at: "2026-01-03T10:00:00Z"
+        },
+        {
+          id: "demo-book-2",
+          shelf_id: "demo-shelf-1",
+          title: "The Pragmatic Field Guide",
+          author: "Sample Archive",
+          format: "EPUB",
+          thumbnail_url: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=420&q=80",
+          download_url: "https://example.com/sample-book-2.epub",
+          created_at: "2026-01-04T10:00:00Z"
+        },
+        {
+          id: "demo-book-3",
+          shelf_id: "demo-shelf-2",
+          title: "Grid Systems in Neo-Print",
+          author: "Sample Archive",
+          format: "PDF",
+          thumbnail_url: "https://images.unsplash.com/photo-1589998059171-988d887df646?auto=format&fit=crop&w=420&q=80",
+          download_url: "https://example.com/sample-book-3.pdf",
+          created_at: "2026-01-05T10:00:00Z"
+        }
+      ];
+
+      let supabaseClient = null;
+      let activeMode = "demo";
+      let state = { shelves: [], books: [], user: null, pendingConfirm: null };
+
+      function escapeHtml(str) {
+        return String(str ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function sanitizeUrl(url) {
+        const trimmed = String(url ?? "").trim();
+        if (!trimmed) return "";
+        if (trimmed.startsWith("/") || trimmed.startsWith("./") || trimmed.startsWith("../")) return trimmed;
+        try {
+          const parsed = new URL(trimmed);
+          if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.href;
+        } catch (_) {
+          return "";
+        }
+        return "";
+      }
+
+      function uid() {
+        if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
+        return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2, 10);
+      }
+
+      function showToast(message, type = "info") {
+        let stack = document.getElementById("toastStack");
+        if (!stack) {
+          stack = document.createElement("div");
+          stack.id = "toastStack";
+          stack.className = "toast-stack";
+          document.body.appendChild(stack);
+        }
+        const item = document.createElement("div");
+        item.className = `toast-item ${type}`;
+        const icon = type === "success" ? "fa-circle-check" : type === "error" ? "fa-triangle-exclamation" : "fa-circle-info";
+        item.innerHTML = `<i class="fa-solid ${icon}"></i><span>${escapeHtml(message)}</span>`;
+        stack.appendChild(item);
+        setTimeout(() => item.remove(), 3400);
+      }
+
+      function initThemeToggle() {
+        const saved = localStorage.getItem(LS_THEME);
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.body.classList.toggle("dark-mode", saved ? saved === "dark" : prefersDark);
+        const btn = document.getElementById("themeToggleBtn");
+        function syncIcon() {
+          const dark = document.body.classList.contains("dark-mode");
+          btn.innerHTML = dark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+          btn.setAttribute("title", dark ? "Switch to Light Mode" : "Switch to Dark Mode");
+        }
+        syncIcon();
+        btn.addEventListener("click", () => {
+          const nextDark = !document.body.classList.contains("dark-mode");
+          document.body.classList.toggle("dark-mode", nextDark);
+          localStorage.setItem(LS_THEME, nextDark ? "dark" : "light");
+          syncIcon();
+        });
+      }
+
+      function getCredentials() {
+        const env = window.NEOLIB_ENV || {};
+        return {
+          url: (env.SUPABASE_URL || localStorage.getItem(LS_SUPA_URL) || "").trim(),
+          key: (env.SUPABASE_ANON_KEY || localStorage.getItem(LS_SUPA_KEY) || "").trim()
+        };
+      }
+
+      function initClient() {
+        const { url, key } = getCredentials();
+        if (url && key && window.supabase && typeof window.supabase.createClient === "function") {
+          try {
+            supabaseClient = window.supabase.createClient(url, key);
+            activeMode = "supabase";
+            supabaseClient.auth.onAuthStateChange(() => refreshAll());
+            return;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        supabaseClient = null;
+        activeMode = "demo";
+        if (!localStorage.getItem(LS_DEMO_SHELVES)) localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(DEFAULT_SHELVES));
+        if (!localStorage.getItem(LS_DEMO_BOOKS)) localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(DEFAULT_BOOKS));
+      }
+
+      async function getCurrentUser() {
+        if (activeMode !== "supabase" || !supabaseClient) return null;
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (error) return null;
+        return data && data.session ? data.session.user : null;
+      }
+
+      async function fetchLibrary() {
+        if (activeMode === "supabase" && supabaseClient) {
+          const [shelvesRes, booksRes] = await Promise.all([
+            supabaseClient.from("shelves").select("*").order("created_at", { ascending: true }),
+            supabaseClient.from("books").select("*").order("created_at", { ascending: true })
+          ]);
+          if (shelvesRes.error) throw shelvesRes.error;
+          if (booksRes.error) throw booksRes.error;
+          return { shelves: shelvesRes.data || [], books: booksRes.data || [] };
+        }
+        return {
+          shelves: JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]"),
+          books: JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]")
+        };
+      }
+
+      async function createShelf(payload) {
+        const row = { name: payload.name.trim(), code: (payload.code || "SH-01").trim(), description: (payload.description || "").trim(), accent: payload.accent || "lavender" };
+        if (activeMode === "supabase" && supabaseClient) {
+          const { data, error } = await supabaseClient.from("shelves").insert([row]).select().single();
+          if (error) throw error;
+          return data;
+        }
+        const shelves = JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]");
+        const created = { id: uid(), ...row, created_at: new Date().toISOString() };
+        shelves.push(created);
+        localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(shelves));
+        return created;
+      }
+
+      async function updateShelf(id, payload) {
+        const row = { name: payload.name.trim(), code: (payload.code || "SH-01").trim(), description: (payload.description || "").trim(), accent: payload.accent || "lavender" };
+        if (activeMode === "supabase" && supabaseClient) {
+          const { data, error } = await supabaseClient.from("shelves").update(row).eq("id", id).select().single();
+          if (error) throw error;
+          return data;
+        }
+        const shelves = JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]");
+        const idx = shelves.findIndex((s) => s.id === id);
+        if (idx === -1) throw new Error("Shelf not found");
+        shelves[idx] = { ...shelves[idx], ...row };
+        localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(shelves));
+        return shelves[idx];
+      }
+
+      async function deleteShelf(id) {
+        if (activeMode === "supabase" && supabaseClient) {
+          const { error } = await supabaseClient.from("shelves").delete().eq("id", id);
+          if (error) throw error;
+          return;
+        }
+        localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]").filter((s) => s.id !== id)));
+        localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]").filter((b) => b.shelf_id !== id)));
+      }
+
+      async function createBook(payload) {
+        const row = {
+          shelf_id: payload.shelf_id,
+          title: payload.title.trim(),
+          author: (payload.author || "").trim(),
+          format: (payload.format || "PDF").trim().toUpperCase(),
+          thumbnail_url: (payload.thumbnail_url || "").trim(),
+          download_url: payload.download_url.trim()
+        };
+        if (activeMode === "supabase" && supabaseClient) {
+          const { data, error } = await supabaseClient.from("books").insert([row]).select().single();
+          if (error) throw error;
+          return data;
+        }
+        const books = JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]");
+        const created = { id: uid(), ...row, created_at: new Date().toISOString() };
+        books.push(created);
+        localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(books));
+        return created;
+      }
+
+      async function updateBook(id, payload) {
+        const row = {
+          shelf_id: payload.shelf_id,
+          title: payload.title.trim(),
+          author: (payload.author || "").trim(),
+          format: (payload.format || "PDF").trim().toUpperCase(),
+          thumbnail_url: (payload.thumbnail_url || "").trim(),
+          download_url: payload.download_url.trim()
+        };
+        if (activeMode === "supabase" && supabaseClient) {
+          const { data, error } = await supabaseClient.from("books").update(row).eq("id", id).select().single();
+          if (error) throw error;
+          return data;
+        }
+        const books = JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]");
+        const idx = books.findIndex((b) => b.id === id);
+        if (idx === -1) throw new Error("Book not found");
+        books[idx] = { ...books[idx], ...row };
+        localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(books));
+        return books[idx];
+      }
+
+      async function deleteBook(id) {
+        if (activeMode === "supabase" && supabaseClient) {
+          const { error } = await supabaseClient.from("books").delete().eq("id", id);
+          if (error) throw error;
+          return;
+        }
+        localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]").filter((b) => b.id !== id)));
+      }
+
+      function renderPreviewCard(book, shelfAccent = "lavender") {
+        const safeTitle = escapeHtml(book.title || "Untitled Book");
+        const safeAuthor = escapeHtml(book.author || "");
+        const safeFormat = escapeHtml((book.format || "PDF").toUpperCase());
+        const safeThumb = sanitizeUrl(book.thumbnail_url);
+        const accentClass = ["lavender", "green", "cyan", "coral"].includes(shelfAccent) ? `accent-${shelfAccent}` : "accent-lavender";
+
+        const coverContent = safeThumb
+          ? `<img class="book-cover-img" src="${escapeHtml(safeThumb)}" alt="${safeTitle}"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+             <div class="book-cover-fallback" style="display:none;"><i class="fa-solid fa-book"></i><span>${safeTitle}</span></div>`
+          : `<div class="book-cover-fallback"><i class="fa-solid fa-book"></i><span>${safeTitle}</span></div>`;
+
+        return `
+          <div class="book-card-link">
+            <div class="book-physical">
+              <div class="book-spine ${accentClass}" aria-hidden="true">
+                <span class="spine-groove"></span><span class="spine-groove"></span>
+              </div>
+              <div class="book-cover-frame">
+                ${coverContent}
+                <span class="book-dl-badge"><i class="fa-solid fa-download"></i></span>
+                <span class="book-format-badge">${safeFormat}</span>
+              </div>
+            </div>
+            <div class="book-label-plate">
+              <div class="book-title-text">${safeTitle}</div>
+              ${safeAuthor ? `<div class="book-author-text">${safeAuthor}</div>` : ""}
+            </div>
+          </div>`;
+      }
+
+      function openModal(id) { document.getElementById(id).classList.add("open"); }
+      function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+      function closeAllModals() { document.querySelectorAll(".modal-overlay.open").forEach((m) => m.classList.remove("open")); }
+      function askConfirm(message, onConfirm) {
+        document.getElementById("confirmMessage").textContent = message;
+        state.pendingConfirm = onConfirm;
+        openModal("confirmModal");
+      }
+
+      async function syncAuthGate() {
+        const loginSection = document.getElementById("adminLoginSection");
+        const protectedArea = document.getElementById("consoleProtectedArea");
+        const signOutBtn = document.getElementById("signOutBtn");
+
+        if (activeMode === "supabase") {
+          state.user = await getCurrentUser();
+          if (!state.user) {
+            loginSection.style.display = "block";
+            protectedArea.style.display = "none";
+            signOutBtn.style.display = "none";
+            document.getElementById("consoleStatusText").textContent = "ADMIN LOCKED";
+            return false;
+          }
+          loginSection.style.display = "none";
+          protectedArea.style.display = "flex";
+          signOutBtn.style.display = "inline-flex";
+          return true;
+        }
+        state.user = null;
+        loginSection.style.display = "none";
+        protectedArea.style.display = "flex";
+        signOutBtn.style.display = "none";
+        return true;
+      }
+
+      function renderStats() {
+        const statMode = document.getElementById("statMode");
+        const statUserEmail = document.getElementById("statUserEmail");
+        const statIcon = document.getElementById("statModeIcon");
+        const statusText = document.getElementById("consoleStatusText");
+
+        if (activeMode === "supabase") {
+          statMode.textContent = "SUPABASE LIVE";
+          statUserEmail.textContent = state.user ? state.user.email : "";
+          statIcon.style.background = "var(--green)";
+          statIcon.style.color = "#1b380b";
+          statusText.textContent = "ADMIN AUTHENTICATED";
+        } else {
+          statMode.textContent = "LOCAL DEMO";
+          statUserEmail.textContent = "Browser LocalStorage";
+          statIcon.style.background = "var(--lavender)";
+          statIcon.style.color = "#2b1742";
+          statusText.textContent = "LOCAL DEMO MODE";
+        }
+        document.getElementById("statShelves").textContent = String(state.shelves.length);
+        document.getElementById("statBooks").textContent = String(state.books.length);
+      }
+
+      function renderShelfSelectors() {
+        const targetSelect = document.getElementById("bookShelfSelect");
+        const filterSelect = document.getElementById("filterShelfSelect");
+        const prevTarget = targetSelect.value;
+        const prevFilter = filterSelect.value;
+
+        let targetOpts = '<option value="">-- Select a Shelf --</option>';
+        let filterOpts = '<option value="ALL">Filter: All Shelves</option>';
+        for (const shelf of state.shelves) {
+          const label = `${shelf.code ? `[${shelf.code}] ` : ""}${shelf.name}`;
+          targetOpts += `<option value="${escapeHtml(shelf.id)}">${escapeHtml(label)}</option>`;
+          filterOpts += `<option value="${escapeHtml(shelf.id)}">${escapeHtml(label)}</option>`;
+        }
+        targetSelect.innerHTML = targetOpts;
+        filterSelect.innerHTML = filterOpts;
+
+        if (state.shelves.some((s) => s.id === prevTarget)) targetSelect.value = prevTarget;
+        else if (state.shelves.length > 0 && !document.getElementById("editBookId").value) targetSelect.value = state.shelves[0].id;
+        if (prevFilter === "ALL" || state.shelves.some((s) => s.id === prevFilter)) filterSelect.value = prevFilter;
+      }
+
+      function renderShelfManageList() {
+        const list = document.getElementById("shelfManageList");
+        if (state.shelves.length === 0) {
+          list.innerHTML = `<div style="border:2px dashed var(--placeholder-border); padding:14px; text-align:center; color:var(--text-muted); font-size:0.88rem;">No shelves created yet.</div>`;
+          return;
+        }
+        list.innerHTML = state.shelves.map((shelf) => {
+          const count = state.books.filter((b) => b.shelf_id === shelf.id).length;
+          const accentTag = shelf.accent === "green" ? "green" : shelf.accent === "coral" ? "coral" : shelf.accent === "cyan" ? "cyan" : "";
+          return `
+            <div class="shelf-manage-row">
+              <div class="shelf-manage-meta">
+                <span class="tag ${accentTag} mono">${escapeHtml(shelf.code || "SH")}</span>
+                <div style="min-width:0;">
+                  <div style="font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(shelf.name)}</div>
+                  <div class="mono" style="font-size:0.75rem; color:var(--text-muted);">${count} ${count === 1 ? "book" : "books"}</div>
+                </div>
+              </div>
+              <div class="row-actions">
+                <button class="cozy-btn sm" type="button" data-edit-shelf="${escapeHtml(shelf.id)}"><i class="fa-solid fa-pen"></i></button>
+                <button class="cozy-btn sm danger" type="button" data-delete-shelf="${escapeHtml(shelf.id)}"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>`;
+        }).join("");
+
+        list.querySelectorAll("[data-edit-shelf]").forEach((btn) => btn.addEventListener("click", () => startEditShelf(btn.getAttribute("data-edit-shelf"))));
+        list.querySelectorAll("[data-delete-shelf]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const id = btn.getAttribute("data-delete-shelf");
+            const shelf = state.shelves.find((s) => s.id === id);
+            const count = state.books.filter((b) => b.shelf_id === id).length;
+            askConfirm(`Remove shelf "${shelf ? shelf.name : ""}" and its ${count} book(s)?`, async () => {
+              try {
+                await deleteShelf(id);
+                if (document.getElementById("editShelfId").value === id) resetShelfForm();
+                showToast("Shelf removed", "success");
+                await refreshAll();
+              } catch (err) {
+                showToast(err.message || "Failed to remove shelf", "error");
+              }
+            });
+          });
+        });
+      }
+
+      function renderInventoryTable() {
+        const tbody = document.getElementById("inventoryTableBody");
+        const filterShelf = document.getElementById("filterShelfSelect").value;
+        const query = document.getElementById("inventorySearch").value.trim().toLowerCase();
+
+        let filtered = state.books;
+        if (filterShelf !== "ALL") filtered = filtered.filter((b) => b.shelf_id === filterShelf);
+        if (query) {
+          filtered = filtered.filter((b) =>
+            b.title.toLowerCase().includes(query) ||
+            (b.author || "").toLowerCase().includes(query) ||
+            (b.format || "").toLowerCase().includes(query)
+          );
+        }
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:24px; color:var(--text-muted);">No books found.</td></tr>`;
+          return;
+        }
+
+        tbody.innerHTML = filtered.map((book) => {
+          const shelf = state.shelves.find((s) => s.id === book.shelf_id);
+          const safeThumb = sanitizeUrl(book.thumbnail_url);
+          const safeDownload = sanitizeUrl(book.download_url);
+          return `
+            <tr>
+              <td>${safeThumb
+                ? `<img class="thumb-mini" src="${escapeHtml(safeThumb)}" alt="" onerror="this.style.visibility='hidden'" />`
+                : `<div class="thumb-mini" style="display:flex;align-items:center;justify-content:center;"><i class="fa-solid fa-book"></i></div>`
+              }</td>
+              <td>
+                <div style="font-weight:800;">${escapeHtml(book.title)}</div>
+                ${book.author ? `<div style="font-size:0.8rem; color:var(--text-muted);">${escapeHtml(book.author)}</div>` : ""}
+              </td>
+              <td><span class="tag">${escapeHtml(shelf ? shelf.name : "Unknown Shelf")}</span></td>
+              <td><span class="tag cyan mono">${escapeHtml((book.format || "PDF").toUpperCase())}</span></td>
+              <td style="max-width:220px;">${safeDownload
+                ? `<a href="${escapeHtml(safeDownload)}" target="_blank" rel="noopener noreferrer" class="mono" style="font-size:0.78rem; color:var(--text-main);"><i class="fa-solid fa-arrow-up-right-from-square"></i> Open Link</a>`
+                : `<span class="tag coral">Invalid URL</span>`
+              }</td>
+              <td>
+                <div class="row-actions">
+                  <button class="cozy-btn sm" type="button" data-edit-book="${escapeHtml(book.id)}"><i class="fa-solid fa-pen"></i></button>
+                  <button class="cozy-btn sm danger" type="button" data-delete-book="${escapeHtml(book.id)}"><i class="fa-solid fa-trash"></i></button>
+                </div>
+              </td>
+            </tr>`;
+        }).join("");
+
+        tbody.querySelectorAll("[data-edit-book]").forEach((btn) => btn.addEventListener("click", () => startEditBook(btn.getAttribute("data-edit-book"))));
+        tbody.querySelectorAll("[data-delete-book]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const id = btn.getAttribute("data-delete-book");
+            const book = state.books.find((b) => b.id === id);
+            askConfirm(`Remove "${book ? book.title : "this book"}" from the shelf?`, async () => {
+              try {
+                await deleteBook(id);
+                if (document.getElementById("editBookId").value === id) resetBookForm();
+                showToast("Book removed", "success");
+                await refreshAll();
+              } catch (err) {
+                showToast(err.message || "Failed to remove book", "error");
+              }
+            });
+          });
+        });
+      }
+
+      function updateLiveBookPreview() {
+        const shelfId = document.getElementById("bookShelfSelect").value;
+        const shelf = state.shelves.find((s) => s.id === shelfId);
+        document.getElementById("liveBookPreview").innerHTML = renderPreviewCard(
+          {
+            title: document.getElementById("bookTitle").value.trim() || "Book Title Preview",
+            author: document.getElementById("bookAuthor").value.trim() || "Author Name",
+            format: document.getElementById("bookFormat").value.trim() || "PDF",
+            thumbnail_url: document.getElementById("bookThumbUrl").value.trim()
+          },
+          shelf ? shelf.accent : "lavender"
+        );
+      }
+
+      function startEditShelf(id) {
+        const shelf = state.shelves.find((s) => s.id === id);
+        if (!shelf) return;
+        document.getElementById("editShelfId").value = shelf.id;
+        document.getElementById("shelfName").value = shelf.name;
+        document.getElementById("shelfCode").value = shelf.code || "SH-01";
+        document.getElementById("shelfAccent").value = shelf.accent || "lavender";
+        document.getElementById("shelfDesc").value = shelf.description || "";
+        document.getElementById("shelfFormHeading").innerHTML = '<i class="fa-solid fa-pen"></i> Edit Shelf';
+        document.getElementById("shelfFormModeTag").textContent = "EDITING";
+        document.getElementById("shelfSubmitBtn").innerHTML = '<i class="fa-solid fa-check"></i><span>Save Shelf</span>';
+        document.getElementById("shelfCancelEditBtn").style.display = "inline-flex";
+      }
+
+      function resetShelfForm() {
+        document.getElementById("shelfForm").reset();
+        document.getElementById("editShelfId").value = "";
+        document.getElementById("shelfCode").value = `SH-0${state.shelves.length + 1}`;
+        document.getElementById("shelfFormHeading").innerHTML = '<i class="fa-solid fa-folder-plus"></i> Create New Shelf';
+        document.getElementById("shelfFormModeTag").textContent = "NEW";
+        document.getElementById("shelfSubmitBtn").innerHTML = '<i class="fa-solid fa-plus"></i><span>Create Shelf</span>';
+        document.getElementById("shelfCancelEditBtn").style.display = "none";
+      }
+
+      function startEditBook(id) {
+        const book = state.books.find((b) => b.id === id);
+        if (!book) return;
+        document.getElementById("editBookId").value = book.id;
+        document.getElementById("bookShelfSelect").value = book.shelf_id;
+        document.getElementById("bookTitle").value = book.title;
+        document.getElementById("bookAuthor").value = book.author || "";
+        document.getElementById("bookFormat").value = book.format || "PDF";
+        document.getElementById("bookThumbUrl").value = book.thumbnail_url || "";
+        document.getElementById("bookDownloadUrl").value = book.download_url || "";
+        document.getElementById("bookFormHeading").innerHTML = '<i class="fa-solid fa-pen"></i> Edit Book';
+        document.getElementById("bookFormModeTag").textContent = "EDITING";
+        document.getElementById("bookSubmitBtn").innerHTML = '<i class="fa-solid fa-check"></i><span>Save Book</span>';
+        document.getElementById("bookCancelEditBtn").style.display = "inline-flex";
+        updateLiveBookPreview();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+
+      function resetBookForm() {
+        const keptShelf = document.getElementById("bookShelfSelect").value;
+        document.getElementById("bookForm").reset();
+        document.getElementById("editBookId").value = "";
+        document.getElementById("bookFormat").value = "PDF";
+        if (keptShelf && state.shelves.some((s) => s.id === keptShelf)) document.getElementById("bookShelfSelect").value = keptShelf;
+        document.getElementById("bookFormHeading").innerHTML = '<i class="fa-solid fa-book-medical"></i> Add Book to Shelf';
+        document.getElementById("bookFormModeTag").textContent = "NEW BOOK";
+        document.getElementById("bookSubmitBtn").innerHTML = '<i class="fa-solid fa-plus"></i><span>Add Book to Shelf</span>';
+        document.getElementById("bookCancelEditBtn").style.display = "none";
+        updateLiveBookPreview();
+      }
+
+      async function refreshAll() {
+        const unlocked = await syncAuthGate();
+        if (!unlocked) return;
+        try {
+          const data = await fetchLibrary();
+          state.shelves = data.shelves;
+          state.books = data.books;
+          renderStats();
+          renderShelfSelectors();
+          renderShelfManageList();
+          renderInventoryTable();
+          updateLiveBookPreview();
+        } catch (err) {
+          console.error(err);
+          showToast(err.message || "Error loading library", "error");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        initThemeToggle();
+        initClient();
+        refreshAll();
+
+        const creds = getCredentials();
+        document.getElementById("supaUrlInput").value = creds.url;
+        document.getElementById("supaKeyInput").value = creds.key;
+
+        document.getElementById("adminLoginForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          try {
+            const { error } = await supabaseClient.auth.signInWithPassword({
+              email: document.getElementById("adminEmail").value.trim(),
+              password: document.getElementById("adminPassword").value
+            });
+            if (error) throw error;
+            document.getElementById("adminPassword").value = "";
+            showToast("Signed in as admin!", "success");
+            await refreshAll();
+          } catch (err) {
+            showToast(err.message || "Login failed", "error");
+          }
+        });
+
+        document.getElementById("signOutBtn").addEventListener("click", async () => {
+          try {
+            if (supabaseClient) await supabaseClient.auth.signOut();
+            showToast("Signed out", "info");
+            await refreshAll();
+          } catch (err) {
+            showToast(err.message || "Sign out failed", "error");
+          }
+        });
+
+        document.getElementById("shelfForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const editId = document.getElementById("editShelfId").value;
+          const payload = {
+            name: document.getElementById("shelfName").value,
+            code: document.getElementById("shelfCode").value,
+            accent: document.getElementById("shelfAccent").value,
+            description: document.getElementById("shelfDesc").value
+          };
+          try {
+            if (editId) {
+              await updateShelf(editId, payload);
+              showToast("Shelf updated!", "success");
+            } else {
+              await createShelf(payload);
+              showToast("New shelf created!", "success");
+            }
+            resetShelfForm();
+            await refreshAll();
+          } catch (err) {
+            showToast(err.message || "Could not save shelf (check RLS/admin login)", "error");
+          }
+        });
+
+        document.getElementById("shelfCancelEditBtn").addEventListener("click", resetShelfForm);
+
+        document.getElementById("bookForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const shelfId = document.getElementById("bookShelfSelect").value;
+          if (!shelfId) { showToast("Please select a shelf first.", "error"); return; }
+          const editId = document.getElementById("editBookId").value;
+          const payload = {
+            shelf_id: shelfId,
+            title: document.getElementById("bookTitle").value,
+            author: document.getElementById("bookAuthor").value,
+            format: document.getElementById("bookFormat").value,
+            thumbnail_url: document.getElementById("bookThumbUrl").value,
+            download_url: document.getElementById("bookDownloadUrl").value
+          };
+          try {
+            if (editId) {
+              await updateBook(editId, payload);
+              showToast("Book updated!", "success");
+            } else {
+              await createBook(payload);
+              showToast("Book added to shelf!", "success");
+            }
+            resetBookForm();
+            await refreshAll();
+          } catch (err) {
+            showToast(err.message || "Could not save book (check RLS/admin login)", "error");
+          }
+        });
+
+        document.getElementById("bookCancelEditBtn").addEventListener("click", resetBookForm);
+
+        ["bookShelfSelect", "bookTitle", "bookAuthor", "bookFormat", "bookThumbUrl", "bookDownloadUrl"].forEach((id) => {
+          document.getElementById(id).addEventListener("input", updateLiveBookPreview);
+          document.getElementById(id).addEventListener("change", updateLiveBookPreview);
+        });
+
+        document.getElementById("filterShelfSelect").addEventListener("change", renderInventoryTable);
+        document.getElementById("inventorySearch").addEventListener("input", renderInventoryTable);
+
+        document.getElementById("openSupabaseModalBtn").addEventListener("click", () => openModal("supabaseModal"));
+        document.getElementById("openSqlModalBtn").addEventListener("click", () => openModal("sqlModal"));
+        document.querySelectorAll("[data-close-modal]").forEach((btn) => {
+          btn.addEventListener("click", () => closeModal(btn.getAttribute("data-close-modal")));
+        });
+        document.querySelectorAll(".modal-overlay").forEach((overlay) => {
+          overlay.addEventListener("click", (e) => { if (e.target === overlay) closeAllModals(); });
+        });
+        document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeAllModals(); });
+
+        document.getElementById("confirmActionBtn").addEventListener("click", async () => {
+          const fn = state.pendingConfirm;
+          state.pendingConfirm = null;
+          closeModal("confirmModal");
+          if (typeof fn === "function") await fn();
+        });
+
+        document.getElementById("supabaseConfigForm").addEventListener("submit", async (e) => {
+          e.preventDefault();
+          localStorage.setItem(LS_SUPA_URL, document.getElementById("supaUrlInput").value.trim());
+          localStorage.setItem(LS_SUPA_KEY, document.getElementById("supaKeyInput").value.trim());
+          initClient();
+          closeModal("supabaseModal");
+          showToast("Connected to Supabase!", "success");
+          await refreshAll();
+        });
+
+        document.getElementById("disconnectSupaBtn").addEventListener("click", async () => {
+          localStorage.removeItem(LS_SUPA_URL);
+          localStorage.removeItem(LS_SUPA_KEY);
+          document.getElementById("supaUrlInput").value = "";
+          document.getElementById("supaKeyInput").value = "";
+          initClient();
+          closeModal("supabaseModal");
+          showToast("Local override cleared", "info");
+          await refreshAll();
+        });
+
+        document.getElementById("copySqlBtn").addEventListener("click", async () => {
+          try {
+            await navigator.clipboard.writeText(document.getElementById("sqlScriptText").textContent);
+            showToast("SQL copied to clipboard!", "success");
+          } catch (_) {
+            showToast("Select and copy the SQL manually.", "info");
+          }
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

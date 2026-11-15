@@ -675,17 +675,13 @@
       </div>
 
       <div class="topbar-controls">
-        <button id="openPasswordModalBtn" class="cozy-btn" type="button" style="display:none;">
+        <button id="openPasswordModalBtn" class="cozy-btn lavender" type="button" style="display:none;">
           <i class="fa-solid fa-key"></i>
           <span>Change Password</span>
         </button>
         <button id="lockConsoleBtn" class="cozy-btn danger" type="button" style="display:none;">
           <i class="fa-solid fa-lock"></i>
           <span>Lock</span>
-        </button>
-        <button id="openSupabaseModalBtn" class="cozy-btn lavender" type="button">
-          <i class="fa-solid fa-database"></i>
-          <span>Supabase Config</span>
         </button>
         <button id="openSqlModalBtn" class="cozy-btn" type="button">
           <i class="fa-solid fa-code"></i>
@@ -699,12 +695,23 @@
     </header>
 
     <main class="console-workspace">
+      <!-- Shown only if SUPABASE_URL / SUPABASE_ANON_KEY are missing -->
+      <section id="configMissingSection" class="pop-shell" data-stamp="✦ ENV MISSING" style="display:none; max-width:560px; margin:28px auto; width:100%;">
+        <div class="slide-card panel-inner" style="text-align:center;">
+          <i class="fa-solid fa-database" style="font-size:2.2rem; margin-bottom:10px;"></i>
+          <h2 style="margin:0 0 8px;">Supabase Secrets Not Configured</h2>
+          <p style="margin:0; font-size:0.92rem; color:var(--text-muted);">
+            This console uses <code>SUPABASE_URL</code> and <code>SUPABASE_ANON_KEY</code> injected from your GitHub Actions Secrets during deployment.
+          </p>
+        </div>
+      </section>
+
       <!-- Password Lock Gate -->
-      <section id="passwordGateSection" class="pop-shell" data-stamp="✦ LOCKED" style="max-width:480px; margin:28px auto; width:100%;">
+      <section id="passwordGateSection" class="pop-shell" data-stamp="✦ LOCKED" style="display:none; max-width:480px; margin:28px auto; width:100%;">
         <div class="slide-card panel-inner">
           <h2 class="panel-title">
             <span><i class="fa-solid fa-lock"></i> Console Locked</span>
-            <span class="tag cyan mono" id="lockModeTag">DATABASE</span>
+            <span class="tag cyan mono">SUPABASE DB</span>
           </h2>
           <p style="margin:0 0 14px; font-size:0.9rem; color:var(--text-muted);">
             Enter the console password to create, edit, or delete shelves and books.
@@ -714,7 +721,7 @@
               <label class="field-label" for="consolePasswordInput">Password</label>
               <input id="consolePasswordInput" class="cozy-input" type="password" required placeholder="Enter console password..." autocomplete="current-password" />
             </div>
-            <button id="unlockSubmitBtn" class="cozy-btn primary" type="submit">
+            <button class="cozy-btn primary" type="submit">
               <i class="fa-solid fa-unlock"></i>
               <span>Unlock Console</span>
             </button>
@@ -725,14 +732,14 @@
       <!-- Unlocked Console Workspace -->
       <div id="consoleProtectedArea" style="display:none; flex-direction:column; gap:28px;">
         <section class="console-stats-row" aria-label="Library Telemetry">
-          <div class="pop-shell" data-stamp="✦ MODE">
+          <div class="pop-shell" data-stamp="✦ DATABASE">
             <div class="slide-card stat-card-inner">
               <div>
                 <div class="stat-label">Backend Link</div>
-                <div class="stat-value" id="statMode" style="font-size:1.15rem; margin-top:4px;">DEMO</div>
-                <div class="mono" id="statSubNote" style="font-size:0.74rem; color:var(--text-muted); margin-top:2px;"></div>
+                <div class="stat-value" style="font-size:1.15rem; margin-top:4px;">SUPABASE LIVE</div>
+                <div class="mono" style="font-size:0.74rem; color:var(--text-muted); margin-top:2px;">Database Password Protected</div>
               </div>
-              <div class="stat-icon-box" id="statModeIcon"><i class="fa-solid fa-plug"></i></div>
+              <div class="stat-icon-box" style="background:var(--green); color:#1b380b;"><i class="fa-solid fa-bolt"></i></div>
             </div>
           </div>
 
@@ -742,7 +749,7 @@
                 <div class="stat-label">Document Shelves</div>
                 <div class="stat-value" id="statShelves">0</div>
               </div>
-              <div class="stat-icon-box" style="background:var(--green); color:#1b380b;">
+              <div class="stat-icon-box" style="background:var(--lavender); color:#2b1742;">
                 <i class="fa-solid fa-folder-open"></i>
               </div>
             </div>
@@ -919,7 +926,7 @@
         <i class="fa-solid fa-key"></i> Change Console Password
       </h2>
       <p style="margin:0; font-size:0.88rem; color:var(--text-muted);">
-        Your new password is hashed and saved directly in the database.
+        Your new password is hashed and saved directly in your Supabase database.
       </p>
       <form id="changePasswordForm" class="form-grid">
         <div class="field-group">
@@ -938,37 +945,6 @@
           <i class="fa-solid fa-floppy-disk"></i> Save New Password
         </button>
       </form>
-    </div>
-  </div>
-
-  <!-- Supabase Config Modal -->
-  <div class="modal-overlay" id="supabaseModal" role="dialog" aria-modal="true" aria-labelledby="supaModalTitle">
-    <div class="modal-box">
-      <button class="modal-close-protrude" type="button" data-close-modal="supabaseModal" aria-label="Close">
-        <i class="fa-solid fa-xmark"></i>
-      </button>
-      <h2 id="supaModalTitle" style="margin:0; font-size:1.3rem;">
-        <i class="fa-solid fa-database"></i> Supabase Connection
-      </h2>
-      <div class="modal-scroll-area">
-        <p style="margin:0; font-size:0.9rem; color:var(--text-muted);">
-          On GitHub Pages, your secrets are injected automatically during deployment. You can also test locally using browser storage below.
-        </p>
-        <form id="supabaseConfigForm" class="form-grid">
-          <div class="field-group">
-            <label class="field-label" for="supaUrlInput">Supabase Project URL</label>
-            <input id="supaUrlInput" class="cozy-input mono" type="url" placeholder="https://xyzcompany.supabase.co" required />
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="supaKeyInput">Supabase Anon / Publishable Key</label>
-            <input id="supaKeyInput" class="cozy-input mono" type="text" placeholder="eyJhbGciOi... or sb_publishable_..." required />
-          </div>
-          <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:4px;">
-            <button class="cozy-btn primary" type="submit"><i class="fa-solid fa-plug-circle-check"></i> Save &amp; Connect</button>
-            <button id="disconnectSupaBtn" class="cozy-btn danger" type="button"><i class="fa-solid fa-plug-circle-xmark"></i> Clear Local Override</button>
-          </div>
-        </form>
-      </div>
     </div>
   </div>
 
@@ -1015,7 +991,6 @@ create table if not exists public.console_config (
 
 create index if not exists idx_books_shelf_id on public.books(shelf_id);
 
--- Lock down direct table access
 alter table public.shelves enable row level security;
 alter table public.books enable row level security;
 alter table public.console_config enable row level security;
@@ -1028,7 +1003,6 @@ drop policy if exists "Allow public read books" on public.books;
 create policy "Allow public read books"
   on public.books for select to anon, authenticated using (true);
 
--- Seed default password '1234' (only if not already set)
 create or replace function public._neolib_seed_pw()
 returns void
 language plpgsql
@@ -1044,7 +1018,6 @@ $$;
 select public._neolib_seed_pw();
 drop function public._neolib_seed_pw();
 
--- Verify console password
 create or replace function public.verify_console_password(p_password text)
 returns boolean
 language plpgsql
@@ -1059,7 +1032,6 @@ begin
 end;
 $$;
 
--- Change console password in database
 create or replace function public.change_console_password(p_old_password text, p_new_password text)
 returns boolean
 language plpgsql
@@ -1082,7 +1054,6 @@ begin
 end;
 $$;
 
--- Admin Shelf Create / Update
 create or replace function public.admin_save_shelf(
   p_password text,
   p_id uuid,
@@ -1121,7 +1092,6 @@ begin
 end;
 $$;
 
--- Admin Shelf Delete
 create or replace function public.admin_delete_shelf(p_password text, p_id uuid)
 returns void
 language plpgsql
@@ -1136,7 +1106,6 @@ begin
 end;
 $$;
 
--- Admin Book Create / Update
 create or replace function public.admin_save_book(
   p_password text,
   p_id uuid,
@@ -1179,7 +1148,6 @@ begin
 end;
 $$;
 
--- Admin Book Delete
 create or replace function public.admin_delete_book(p_password text, p_id uuid)
 returns void
 language plpgsql
@@ -1233,67 +1201,9 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
       "use strict";
 
       const LS_THEME = "neolib_theme";
-      const LS_SUPA_URL = "neolib_supabase_url";
-      const LS_SUPA_KEY = "neolib_supabase_key";
-      const LS_DEMO_SHELVES = "neolib_demo_shelves_v1";
-      const LS_DEMO_BOOKS = "neolib_demo_books_v1";
-      const LS_DEMO_PW = "neolib_demo_console_pw";
       const SS_UNLOCK_PW = "neolib_session_console_pw";
 
-      const DEFAULT_SHELVES = [
-        {
-          id: "demo-shelf-1",
-          name: "System Design & Code",
-          code: "SH-01",
-          description: "Engineering handbooks, architecture blueprints, and clean programming manuals.",
-          accent: "lavender",
-          created_at: "2026-01-01T10:00:00Z"
-        },
-        {
-          id: "demo-shelf-2",
-          name: "Visual Arts & Zines",
-          code: "SH-02",
-          description: "Illustration monographs, grid typography guides, and tactile layout books.",
-          accent: "green",
-          created_at: "2026-01-02T10:00:00Z"
-        }
-      ];
-
-      const DEFAULT_BOOKS = [
-        {
-          id: "demo-book-1",
-          shelf_id: "demo-shelf-1",
-          title: "Designing Data-Intensive Apps",
-          author: "Sample Archive",
-          format: "PDF",
-          thumbnail_url: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=420&q=80",
-          download_url: "https://example.com/sample-book-1.pdf",
-          created_at: "2026-01-03T10:00:00Z"
-        },
-        {
-          id: "demo-book-2",
-          shelf_id: "demo-shelf-1",
-          title: "The Pragmatic Field Guide",
-          author: "Sample Archive",
-          format: "EPUB",
-          thumbnail_url: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=420&q=80",
-          download_url: "https://example.com/sample-book-2.epub",
-          created_at: "2026-01-04T10:00:00Z"
-        },
-        {
-          id: "demo-book-3",
-          shelf_id: "demo-shelf-2",
-          title: "Grid Systems in Neo-Print",
-          author: "Sample Archive",
-          format: "PDF",
-          thumbnail_url: "https://images.unsplash.com/photo-1589998059171-988d887df646?auto=format&fit=crop&w=420&q=80",
-          download_url: "https://example.com/sample-book-3.pdf",
-          created_at: "2026-01-05T10:00:00Z"
-        }
-      ];
-
       let supabaseClient = null;
-      let activeMode = "demo";
       let state = { shelves: [], books: [], unlockedPassword: null, pendingConfirm: null };
 
       function escapeHtml(str) {
@@ -1316,11 +1226,6 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
           return "";
         }
         return "";
-      }
-
-      function uid() {
-        if (window.crypto && typeof window.crypto.randomUUID === "function") return window.crypto.randomUUID();
-        return "id-" + Date.now() + "-" + Math.random().toString(16).slice(2, 10);
       }
 
       function showToast(message, type = "info") {
@@ -1358,170 +1263,87 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
         });
       }
 
-      function getCredentials() {
-        const env = window.NEOLIB_ENV || {};
-        return {
-          url: (env.SUPABASE_URL || localStorage.getItem(LS_SUPA_URL) || "").trim(),
-          key: (env.SUPABASE_ANON_KEY || localStorage.getItem(LS_SUPA_KEY) || "").trim()
-        };
-      }
-
       function initClient() {
-        const { url, key } = getCredentials();
+        const env = window.NEOLIB_ENV || {};
+        const url = String(env.SUPABASE_URL || "").trim();
+        const key = String(env.SUPABASE_ANON_KEY || "").trim();
         if (url && key && window.supabase && typeof window.supabase.createClient === "function") {
-          try {
-            supabaseClient = window.supabase.createClient(url, key);
-            activeMode = "supabase";
-            return;
-          } catch (err) {
-            console.error(err);
-          }
+          supabaseClient = window.supabase.createClient(url, key);
+          return true;
         }
         supabaseClient = null;
-        activeMode = "demo";
-        if (!localStorage.getItem(LS_DEMO_SHELVES)) localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(DEFAULT_SHELVES));
-        if (!localStorage.getItem(LS_DEMO_BOOKS)) localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(DEFAULT_BOOKS));
-        if (!localStorage.getItem(LS_DEMO_PW)) localStorage.setItem(LS_DEMO_PW, "1234");
+        return false;
       }
 
-      /* =====================================================
-         Database Password Gate & RPC Operations
-         ===================================================== */
       async function verifyPassword(pw) {
-        if (activeMode === "supabase" && supabaseClient) {
-          const { data, error } = await supabaseClient.rpc("verify_console_password", { p_password: pw });
-          if (error) throw error;
-          return Boolean(data);
-        }
-        const stored = localStorage.getItem(LS_DEMO_PW) || "1234";
-        return pw === stored;
+        if (!supabaseClient) throw new Error("Supabase is not configured");
+        const { data, error } = await supabaseClient.rpc("verify_console_password", { p_password: pw });
+        if (error) throw error;
+        return Boolean(data);
       }
 
       async function changePassword(oldPw, newPw) {
-        if (activeMode === "supabase" && supabaseClient) {
-          const { data, error } = await supabaseClient.rpc("change_console_password", {
-            p_old_password: oldPw,
-            p_new_password: newPw
-          });
-          if (error) throw error;
-          return Boolean(data);
-        }
-        const stored = localStorage.getItem(LS_DEMO_PW) || "1234";
-        if (oldPw !== stored) throw new Error("Current password is incorrect");
-        if (!newPw.trim()) throw new Error("New password cannot be empty");
-        localStorage.setItem(LS_DEMO_PW, newPw);
-        return true;
+        if (!supabaseClient) throw new Error("Supabase is not configured");
+        const { data, error } = await supabaseClient.rpc("change_console_password", {
+          p_old_password: oldPw,
+          p_new_password: newPw
+        });
+        if (error) throw error;
+        return Boolean(data);
       }
 
       async function fetchLibrary() {
-        if (activeMode === "supabase" && supabaseClient) {
-          const [shelvesRes, booksRes] = await Promise.all([
-            supabaseClient.from("shelves").select("*").order("created_at", { ascending: true }),
-            supabaseClient.from("books").select("*").order("created_at", { ascending: true })
-          ]);
-          if (shelvesRes.error) throw shelvesRes.error;
-          if (booksRes.error) throw booksRes.error;
-          return { shelves: shelvesRes.data || [], books: booksRes.data || [] };
-        }
-        return {
-          shelves: JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]"),
-          books: JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]")
-        };
+        const [shelvesRes, booksRes] = await Promise.all([
+          supabaseClient.from("shelves").select("*").order("created_at", { ascending: true }),
+          supabaseClient.from("books").select("*").order("created_at", { ascending: true })
+        ]);
+        if (shelvesRes.error) throw shelvesRes.error;
+        if (booksRes.error) throw booksRes.error;
+        return { shelves: shelvesRes.data || [], books: booksRes.data || [] };
       }
 
       async function saveShelf(id, payload) {
-        if (activeMode === "supabase" && supabaseClient) {
-          const { data, error } = await supabaseClient.rpc("admin_save_shelf", {
-            p_password: state.unlockedPassword || "",
-            p_id: id || null,
-            p_name: payload.name,
-            p_code: payload.code,
-            p_description: payload.description,
-            p_accent: payload.accent
-          });
-          if (error) throw error;
-          return data;
-        }
-        const shelves = JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]");
-        const row = {
-          name: payload.name.trim(),
-          code: (payload.code || "SH-01").trim(),
-          description: (payload.description || "").trim(),
-          accent: payload.accent || "lavender"
-        };
-        if (!id) {
-          const created = { id: uid(), ...row, created_at: new Date().toISOString() };
-          shelves.push(created);
-          localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(shelves));
-          return created;
-        }
-        const idx = shelves.findIndex((s) => s.id === id);
-        if (idx === -1) throw new Error("Shelf not found");
-        shelves[idx] = { ...shelves[idx], ...row };
-        localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(shelves));
-        return shelves[idx];
+        const { data, error } = await supabaseClient.rpc("admin_save_shelf", {
+          p_password: state.unlockedPassword || "",
+          p_id: id || null,
+          p_name: payload.name,
+          p_code: payload.code,
+          p_description: payload.description,
+          p_accent: payload.accent
+        });
+        if (error) throw error;
+        return data;
       }
 
       async function deleteShelf(id) {
-        if (activeMode === "supabase" && supabaseClient) {
-          const { error } = await supabaseClient.rpc("admin_delete_shelf", {
-            p_password: state.unlockedPassword || "",
-            p_id: id
-          });
-          if (error) throw error;
-          return;
-        }
-        localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]").filter((s) => s.id !== id)));
-        localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]").filter((b) => b.shelf_id !== id)));
+        const { error } = await supabaseClient.rpc("admin_delete_shelf", {
+          p_password: state.unlockedPassword || "",
+          p_id: id
+        });
+        if (error) throw error;
       }
 
       async function saveBook(id, payload) {
-        if (activeMode === "supabase" && supabaseClient) {
-          const { data, error } = await supabaseClient.rpc("admin_save_book", {
-            p_password: state.unlockedPassword || "",
-            p_id: id || null,
-            p_shelf_id: payload.shelf_id,
-            p_title: payload.title,
-            p_author: payload.author,
-            p_format: payload.format,
-            p_thumbnail_url: payload.thumbnail_url,
-            p_download_url: payload.download_url
-          });
-          if (error) throw error;
-          return data;
-        }
-        const books = JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]");
-        const row = {
-          shelf_id: payload.shelf_id,
-          title: payload.title.trim(),
-          author: (payload.author || "").trim(),
-          format: (payload.format || "PDF").trim().toUpperCase(),
-          thumbnail_url: (payload.thumbnail_url || "").trim(),
-          download_url: payload.download_url.trim()
-        };
-        if (!id) {
-          const created = { id: uid(), ...row, created_at: new Date().toISOString() };
-          books.push(created);
-          localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(books));
-          return created;
-        }
-        const idx = books.findIndex((b) => b.id === id);
-        if (idx === -1) throw new Error("Book not found");
-        books[idx] = { ...books[idx], ...row };
-        localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(books));
-        return books[idx];
+        const { data, error } = await supabaseClient.rpc("admin_save_book", {
+          p_password: state.unlockedPassword || "",
+          p_id: id || null,
+          p_shelf_id: payload.shelf_id,
+          p_title: payload.title,
+          p_author: payload.author,
+          p_format: payload.format,
+          p_thumbnail_url: payload.thumbnail_url,
+          p_download_url: payload.download_url
+        });
+        if (error) throw error;
+        return data;
       }
 
       async function deleteBook(id) {
-        if (activeMode === "supabase" && supabaseClient) {
-          const { error } = await supabaseClient.rpc("admin_delete_book", {
-            p_password: state.unlockedPassword || "",
-            p_id: id
-          });
-          if (error) throw error;
-          return;
-        }
-        localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]").filter((b) => b.id !== id)));
+        const { error } = await supabaseClient.rpc("admin_delete_book", {
+          p_password: state.unlockedPassword || "",
+          p_id: id
+        });
+        if (error) throw error;
       }
 
       function renderPreviewCard(book, shelfAccent = "lavender") {
@@ -1565,8 +1387,16 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
         openModal("confirmModal");
       }
 
+      function showMissingEnvUI() {
+        document.getElementById("configMissingSection").style.display = "block";
+        document.getElementById("passwordGateSection").style.display = "none";
+        document.getElementById("consoleProtectedArea").style.display = "none";
+        document.getElementById("openPasswordModalBtn").style.display = "none";
+        document.getElementById("lockConsoleBtn").style.display = "none";
+      }
+
       function showLockedUI() {
-        document.getElementById("lockModeTag").textContent = activeMode === "supabase" ? "SUPABASE DB" : "LOCAL DEMO";
+        document.getElementById("configMissingSection").style.display = "none";
         document.getElementById("passwordGateSection").style.display = "block";
         document.getElementById("consoleProtectedArea").style.display = "none";
         document.getElementById("openPasswordModalBtn").style.display = "none";
@@ -1574,6 +1404,7 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
       }
 
       function showUnlockedUI() {
+        document.getElementById("configMissingSection").style.display = "none";
         document.getElementById("passwordGateSection").style.display = "none";
         document.getElementById("consoleProtectedArea").style.display = "flex";
         document.getElementById("openPasswordModalBtn").style.display = "inline-flex";
@@ -1581,6 +1412,10 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
       }
 
       async function checkSessionUnlock() {
+        if (!supabaseClient) {
+          showMissingEnvUI();
+          return false;
+        }
         const savedPw = sessionStorage.getItem(SS_UNLOCK_PW);
         if (!savedPw) {
           state.unlockedPassword = null;
@@ -1604,21 +1439,6 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
       }
 
       function renderStats() {
-        const statMode = document.getElementById("statMode");
-        const statSubNote = document.getElementById("statSubNote");
-        const statIcon = document.getElementById("statModeIcon");
-
-        if (activeMode === "supabase") {
-          statMode.textContent = "SUPABASE LIVE";
-          statSubNote.textContent = "Database Password Protected";
-          statIcon.style.background = "var(--green)";
-          statIcon.style.color = "#1b380b";
-        } else {
-          statMode.textContent = "LOCAL DEMO";
-          statSubNote.textContent = "Browser LocalStorage";
-          statIcon.style.background = "var(--lavender)";
-          statIcon.style.color = "#2b1742";
-        }
         document.getElementById("statShelves").textContent = String(state.shelves.length);
         document.getElementById("statBooks").textContent = String(state.books.length);
       }
@@ -1840,7 +1660,7 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
           updateLiveBookPreview();
         } catch (err) {
           console.error(err);
-          showToast(err.message || "Error loading library", "error");
+          showToast(err.message || "Error loading library from Supabase", "error");
         }
       }
 
@@ -1849,11 +1669,6 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
         initClient();
         refreshAll();
 
-        const creds = getCredentials();
-        document.getElementById("supaUrlInput").value = creds.url;
-        document.getElementById("supaKeyInput").value = creds.key;
-
-        // Unlock console form
         document.getElementById("unlockForm").addEventListener("submit", async (e) => {
           e.preventDefault();
           const pw = document.getElementById("consolePasswordInput").value;
@@ -1868,11 +1683,10 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
             showToast("Console unlocked!", "success");
             await refreshAll();
           } catch (err) {
-            showToast(err.message || "Verification failed (run SQL Schema first)", "error");
+            showToast(err.message || "Verification failed (run SQL Schema in Supabase first)", "error");
           }
         });
 
-        // Lock console button
         document.getElementById("lockConsoleBtn").addEventListener("click", () => {
           sessionStorage.removeItem(SS_UNLOCK_PW);
           state.unlockedPassword = null;
@@ -1880,7 +1694,6 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
           showToast("Console locked", "info");
         });
 
-        // Change password form
         document.getElementById("openPasswordModalBtn").addEventListener("click", () => {
           document.getElementById("changePasswordForm").reset();
           openModal("changePasswordModal");
@@ -1892,14 +1705,8 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
           const newPw = document.getElementById("newPwInput").value;
           const confirmPw = document.getElementById("confirmPwInput").value;
 
-          if (newPw !== confirmPw) {
-            showToast("New passwords do not match", "error");
-            return;
-          }
-          if (!newPw.trim()) {
-            showToast("New password cannot be empty", "error");
-            return;
-          }
+          if (newPw !== confirmPw) { showToast("New passwords do not match", "error"); return; }
+          if (!newPw.trim()) { showToast("New password cannot be empty", "error"); return; }
 
           try {
             await changePassword(oldPw, newPw);
@@ -1912,7 +1719,6 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
           }
         });
 
-        // Shelf form
         document.getElementById("shelfForm").addEventListener("submit", async (e) => {
           e.preventDefault();
           const editId = document.getElementById("editShelfId").value;
@@ -1934,7 +1740,6 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
 
         document.getElementById("shelfCancelEditBtn").addEventListener("click", resetShelfForm);
 
-        // Book form
         document.getElementById("bookForm").addEventListener("submit", async (e) => {
           e.preventDefault();
           const shelfId = document.getElementById("bookShelfSelect").value;
@@ -1968,7 +1773,6 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
         document.getElementById("filterShelfSelect").addEventListener("change", renderInventoryTable);
         document.getElementById("inventorySearch").addEventListener("input", renderInventoryTable);
 
-        document.getElementById("openSupabaseModalBtn").addEventListener("click", () => openModal("supabaseModal"));
         document.getElementById("openSqlModalBtn").addEventListener("click", () => openModal("sqlModal"));
         document.querySelectorAll("[data-close-modal]").forEach((btn) => {
           btn.addEventListener("click", () => closeModal(btn.getAttribute("data-close-modal")));
@@ -1983,29 +1787,6 @@ grant execute on function public.admin_delete_book(text, uuid) to anon, authenti
           state.pendingConfirm = null;
           closeModal("confirmModal");
           if (typeof fn === "function") await fn();
-        });
-
-        document.getElementById("supabaseConfigForm").addEventListener("submit", async (e) => {
-          e.preventDefault();
-          localStorage.setItem(LS_SUPA_URL, document.getElementById("supaUrlInput").value.trim());
-          localStorage.setItem(LS_SUPA_KEY, document.getElementById("supaKeyInput").value.trim());
-          sessionStorage.removeItem(SS_UNLOCK_PW);
-          initClient();
-          closeModal("supabaseModal");
-          showToast("Connected to Supabase!", "success");
-          await refreshAll();
-        });
-
-        document.getElementById("disconnectSupaBtn").addEventListener("click", async () => {
-          localStorage.removeItem(LS_SUPA_URL);
-          localStorage.removeItem(LS_SUPA_KEY);
-          sessionStorage.removeItem(SS_UNLOCK_PW);
-          document.getElementById("supaUrlInput").value = "";
-          document.getElementById("supaKeyInput").value = "";
-          initClient();
-          closeModal("supabaseModal");
-          showToast("Local override cleared", "info");
-          await refreshAll();
         });
 
         document.getElementById("copySqlBtn").addEventListener("click", async () => {

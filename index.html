@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>neoLiB — Digital Ebook Shelves</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Darumadrop+One&family=Hanken+Grotesk:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <style>
+    :root {
+      --lavender: #e3d7ff;
+      --green: #95e06c;
+      --coral: #ff5a5f;
+      --deep-purple: #4c2c72;
+      --soft-cyan: #7ee8fa;
+
+      --bg-page: #f0f7ee;
+      --grid-line-color: rgba(149, 224, 108, 0.28);
+      --card-bg: #ffffff;
+      --text-main: #4c2c72;
+      --text-muted: #745b91;
+      --border-crisp: #4c2c72;
+
+      --placeholder-bg: #e3d7ff;
+      --placeholder-border: rgba(76, 44, 114, 0.35);
+      --placeholder-stamp: rgba(76, 44, 114, 0.42);
+
+      --glow-top: rgba(227, 215, 255, 0.85);
+      --glow-mid: rgba(126, 232, 250, 0.3);
+      --surface-subtle: #faf8fd;
+      --shelf-plank: #d5c4ff;
+      --book-pages: #f7f2ff;
+
+      --spring-slide: cubic-bezier(0.2, 0.9, 0.3, 1.25);
+    }
+
+    body.dark-mode {
+      --bg-page: #0e1410;
+      --grid-line-color: rgba(149, 224, 108, 0.14);
+      --card-bg: #181124;
+      --text-main: #f0eaff;
+      --text-muted: #b49fcf;
+      --border-crisp: #885bc4;
+
+      --placeholder-bg: #2d1d42;
+      --placeholder-border: rgba(227, 215, 255, 0.3);
+      --placeholder-stamp: rgba(227, 215, 255, 0.35);
+
+      --glow-top: rgba(136, 91, 196, 0.35);
+      --glow-mid: rgba(126, 232, 250, 0.12);
+      --surface-subtle: #221733;
+      --shelf-plank: #2d1d42;
+      --book-pages: #261b38;
+    }
+
+    *, *::before, *::after {
+      box-sizing: border-box;
+      border-radius: 0 !important;
+    }
+
+    .status-bubble,
+    .status-bubble-tail,
+    .status-bubble-dot,
+    .sound-bar {
+      border-radius: 9999px !important;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      width: 100%;
+    }
+
+    body {
+      font-family: 'Hanken Grotesk', sans-serif;
+      font-weight: 500;
+      line-height: 1.55;
+      letter-spacing: -0.2px;
+      background-color: var(--bg-page);
+      background-image:
+        linear-gradient(to right, var(--grid-line-color) 1.5px, transparent 1.5px),
+        linear-gradient(to bottom, var(--grid-line-color) 1.5px, transparent 1.5px);
+      background-size: 26px 26px;
+      color: var(--text-main);
+      overflow-x: hidden;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 96vw;
+      max-width: 1600px;
+      height: 520px;
+      background: radial-gradient(
+        ellipse at top,
+        var(--glow-top) 0%,
+        var(--glow-mid) 45%,
+        transparent 75%
+      );
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(32px);
+    }
+
+    button, input, textarea, select {
+      font-family: 'Hanken Grotesk', sans-serif;
+    }
+
+    .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+
+    /* Fixed Top-Right Theme Toggle */
+    .theme-toggle-fixed {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      width: 38px;
+      height: 38px;
+      z-index: 1000;
+      background: var(--card-bg);
+      border: 2px solid var(--border-crisp);
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 1rem;
+      box-shadow: 3px 3px 0 var(--border-crisp);
+      transition: transform 0.18s var(--spring-slide), background-color 0.2s ease, color 0.2s ease, box-shadow 0.18s ease;
+    }
+
+    .theme-toggle-fixed:hover,
+    .theme-toggle-fixed:focus-visible {
+      transform: translate(-2px, -2px);
+      background: var(--soft-cyan);
+      color: #181124;
+      box-shadow: 5px 5px 0 var(--border-crisp);
+      outline: none;
+    }
+
+    .theme-toggle-fixed:active {
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0 var(--border-crisp);
+    }
+
+    /* Full-Screen App Shell */
+    .app-fullscreen {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      width: 100%;
+      background: var(--card-bg);
+      border-bottom: 2px solid var(--border-crisp);
+      padding: 12px 72px 12px 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 4px 0 var(--placeholder-bg);
+    }
+
+    .brand-cluster {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .brand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-main);
+    }
+
+    .brand-badge {
+      width: 42px;
+      height: 42px;
+      background: var(--lavender);
+      color: #2b1742;
+      border: 2px solid var(--border-crisp);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      box-shadow: 3px 3px 0 var(--border-crisp);
+      transition: transform 0.18s var(--spring-slide), background-color 0.2s ease;
+    }
+
+    .brand-link:hover .brand-badge {
+      transform: translate(-2px, -2px);
+      background: var(--soft-cyan);
+      color: #181124;
+    }
+
+    .brand-title {
+      font-family: 'Darumadrop One', cursive, sans-serif;
+      font-size: 2rem;
+      font-weight: 400;
+      letter-spacing: 0.8px;
+      line-height: 1;
+      margin: 0;
+      color: var(--text-main);
+    }
+
+    .status-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .status-bubble {
+      background: #25143a;
+      color: #f0eaff;
+      border: 2px solid var(--border-crisp);
+      padding: 5px 14px;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      animation: floatBubble 3.2s ease-in-out infinite;
+      box-shadow: 3px 3px 0 var(--placeholder-bg);
+    }
+
+    .status-bubble-tail {
+      width: 10px;
+      height: 10px;
+      background: #25143a;
+      border: 2px solid var(--border-crisp);
+      position: absolute;
+      left: -6px;
+      bottom: -5px;
+    }
+
+    .status-bubble-dot {
+      width: 5px;
+      height: 5px;
+      background: #25143a;
+      border: 1.5px solid var(--border-crisp);
+      position: absolute;
+      left: -12px;
+      bottom: -9px;
+    }
+
+    .equalizer {
+      display: inline-flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 12px;
+    }
+
+    .sound-bar {
+      width: 3px;
+      background: var(--green);
+      animation: eqPulse 1.1s ease-in-out infinite;
+    }
+
+    .sound-bar:nth-child(2) { animation-delay: 0.2s; }
+    .sound-bar:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes eqPulse {
+      0%, 100% { height: 4px; }
+      50% { height: 12px; }
+    }
+
+    @keyframes floatBubble {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
+    }
+
+    .topbar-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex: 1;
+      justify-content: flex-end;
+      min-width: 260px;
+    }
+
+    .search-box {
+      position: relative;
+      flex: 1;
+      max-width: 440px;
+      min-width: 180px;
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      pointer-events: none;
+    }
+
+    .search-box .cozy-input {
+      padding-left: 36px;
+    }
+
+    .cozy-btn {
+      background: var(--card-bg);
+      border: 2px solid var(--border-crisp);
+      color: var(--text-main);
+      padding: 8px 16px;
+      font-weight: 800;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+      white-space: nowrap;
+      box-shadow: 3px 3px 0 var(--border-crisp);
+      transition: transform 0.18s var(--spring-slide), background-color 0.2s ease, color 0.2s ease, box-shadow 0.18s ease;
+    }
+
+    .cozy-btn:hover,
+    .cozy-btn:focus-visible {
+      transform: translate(-2px, -2px);
+      background: var(--soft-cyan);
+      color: #181124;
+      box-shadow: 5px 5px 0 var(--border-crisp);
+      outline: none;
+    }
+
+    .cozy-btn:active {
+      transform: translate(1px, 1px);
+      box-shadow: 2px 2px 0 var(--border-crisp);
+    }
+
+    .cozy-btn.primary { background: var(--green); color: #1b380b; }
+    .cozy-btn.primary:hover, .cozy-btn.primary:focus-visible { background: var(--soft-cyan); color: #181124; }
+    .cozy-btn.lavender { background: var(--lavender); color: #2b1742; }
+    .cozy-btn.sm { padding: 5px 10px; font-size: 0.8rem; }
+
+    .cozy-input {
+      width: 100%;
+      background: var(--surface-subtle);
+      border: 2px solid var(--border-crisp);
+      color: var(--text-main);
+      padding: 9px 13px;
+      font-size: 0.92rem;
+      font-weight: 600;
+      outline: none;
+      transition: transform 0.18s var(--spring-slide), box-shadow 0.18s ease, background-color 0.2s ease;
+    }
+
+    .cozy-input::placeholder { color: var(--text-muted); opacity: 0.75; }
+    .cozy-input:focus {
+      background: var(--card-bg);
+      transform: translate(-2px, -2px);
+      box-shadow: 4px 4px 0 var(--border-crisp);
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      padding: 3px 9px;
+      background: var(--lavender);
+      color: #2b1742;
+      border: 1.5px solid var(--border-crisp);
+    }
+
+    body.dark-mode .tag { background: #2b1a3f; color: var(--lavender); }
+    .tag.green { background: var(--green); color: #1b380b; }
+    .tag.cyan { background: var(--soft-cyan); color: #181124; }
+
+    /* Pop-Shell Mechanic */
+    .pop-shell {
+      position: relative;
+      background-color: var(--placeholder-bg);
+      border: 2px dashed var(--placeholder-border);
+      transition: background-color 0.25s ease;
+    }
+
+    .pop-shell::after {
+      content: attr(data-stamp);
+      position: absolute;
+      right: 12px;
+      bottom: 10px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 1px;
+      color: var(--placeholder-stamp);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .slide-card {
+      position: relative;
+      background: var(--card-bg);
+      border: 2px solid var(--border-crisp);
+      width: 100%;
+      z-index: 1;
+      transition: transform 0.22s var(--spring-slide), box-shadow 0.22s ease, background-color 0.25s ease, border-color 0.25s ease;
+    }
+
+    .pop-shell:hover > .slide-card,
+    .pop-shell:focus-within > .slide-card {
+      transform: translate(-10px, -10px);
+      box-shadow: 4px 4px 20px rgba(0, 0, 0, 0.22);
+    }
+
+    /* Full-Screen Split Workspace */
+    .workspace-split {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      flex: 1;
+      width: 100%;
+      min-height: calc(100vh - 76px);
+    }
+
+    .shelf-sidebar {
+      background: var(--surface-subtle);
+      border-right: 2px solid var(--border-crisp);
+      padding: 22px 18px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .sidebar-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--border-crisp);
+      padding-bottom: 10px;
+      font-weight: 800;
+      font-size: 0.92rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .folder-rack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .folder-tab-btn {
+      width: 100%;
+      text-align: left;
+      background: transparent;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--text-main);
+      position: relative;
+      transition: transform 0.18s var(--spring-slide);
+    }
+
+    .folder-ear {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      background: var(--placeholder-bg);
+      color: var(--text-main);
+      border: 2px solid var(--border-crisp);
+      border-bottom: none;
+      position: relative;
+      z-index: 2;
+    }
+
+    .folder-body {
+      background: var(--card-bg);
+      border: 2px solid var(--border-crisp);
+      padding: 11px 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: 3px 3px 0 var(--border-crisp);
+      transition: background-color 0.2s ease, box-shadow 0.18s ease;
+    }
+
+    .folder-tab-btn:hover { transform: translate(-3px, -3px); }
+    .folder-tab-btn:hover .folder-body,
+    .folder-tab-btn:hover .folder-ear {
+      background: var(--soft-cyan);
+      color: #181124;
+    }
+    .folder-tab-btn:hover .folder-body { box-shadow: 5px 5px 0 var(--border-crisp); }
+
+    .folder-tab-btn.active .folder-ear { background: var(--green); color: #1b380b; }
+    .folder-tab-btn.active .folder-body {
+      background: var(--lavender);
+      color: #2b1742;
+      box-shadow: 5px 5px 0 var(--border-crisp);
+    }
+    body.dark-mode .folder-tab-btn.active .folder-body {
+      background: #2f2046;
+      color: #f0eaff;
+    }
+
+    .folder-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .folder-name {
+      font-weight: 800;
+      font-size: 0.95rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .folder-count {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border: 1.5px solid var(--border-crisp);
+      background: var(--surface-subtle);
+      color: var(--text-main);
+      flex-shrink: 0;
+    }
+
+    .shelf-stage {
+      padding: 24px 28px 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 34px;
+      min-width: 0;
+    }
+
+    .stage-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      flex-wrap: wrap;
+      border-bottom: 2px dashed var(--placeholder-border);
+      padding-bottom: 14px;
+    }
+
+    .stage-heading {
+      font-family: 'Darumadrop One', cursive, sans-serif;
+      font-size: 1.9rem;
+      font-weight: 400;
+      margin: 0;
+      line-height: 1.1;
+    }
+
+    .stage-sub {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin: 4px 0 0;
+    }
+
+    /* Document Shelf Cabinet */
+    .document-shelf-unit {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .shelf-folder-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .shelf-folder-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 18px;
+      background: var(--lavender);
+      color: #2b1742;
+      border: 2px solid var(--border-crisp);
+      border-bottom: none;
+      font-weight: 800;
+      font-size: 1rem;
+      position: relative;
+      z-index: 2;
+    }
+
+    .shelf-folder-tab.accent-green { background: var(--green); color: #1b380b; }
+    .shelf-folder-tab.accent-cyan { background: var(--soft-cyan); color: #181124; }
+    .shelf-folder-tab.accent-coral { background: var(--coral); color: #ffffff; }
+    body.dark-mode .shelf-folder-tab.accent-lavender { background: #33204d; color: var(--lavender); }
+
+    .shelf-code-chip {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.76rem;
+      font-weight: 800;
+      padding: 2px 7px;
+      border: 1.5px solid currentColor;
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    body.dark-mode .shelf-code-chip { background: rgba(0, 0, 0, 0.25); }
+
+    .shelf-meta-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 6px;
+    }
+
+    .shelf-cabinet {
+      background: var(--card-bg);
+      border: 2px solid var(--border-crisp);
+      box-shadow: 6px 6px 0 var(--placeholder-bg);
+      position: relative;
+    }
+
+    .shelf-description-strip {
+      padding: 10px 20px;
+      background: var(--surface-subtle);
+      border-bottom: 2px dashed var(--placeholder-border);
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .shelf-books-grid {
+      padding: 26px 24px 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+      gap: 30px 26px;
+      align-items: end;
+    }
+
+    .shelf-plank {
+      height: 18px;
+      width: 100%;
+      background: var(--shelf-plank);
+      border-top: 2px solid var(--border-crisp);
+      border-bottom: 2px solid var(--border-crisp);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 10px,
+        rgba(76, 44, 114, 0.08) 10px,
+        rgba(76, 44, 114, 0.08) 12px
+      );
+    }
+
+    .shelf-plank-bolt {
+      width: 8px;
+      height: 8px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--border-crisp);
+    }
+
+    .shelf-under-shadow {
+      height: 10px;
+      background: var(--surface-subtle);
+      display: flex;
+      justify-content: space-between;
+      padding: 0 22px;
+    }
+
+    .shelf-bracket {
+      width: 18px;
+      height: 10px;
+      background: var(--border-crisp);
+    }
+
+    /* Hardcover Book Thumbnail */
+    .book-card-link {
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      color: var(--text-main);
+      position: relative;
+      cursor: pointer;
+    }
+
+    .book-physical {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+      aspect-ratio: 2 / 3;
+      background: var(--card-bg);
+      border: 2px solid var(--border-crisp);
+      box-shadow:
+        4px 4px 0 var(--book-pages),
+        6px 6px 0 var(--border-crisp);
+      transition: transform 0.22s var(--spring-slide), box-shadow 0.22s ease;
+    }
+
+    .book-card-link:hover .book-physical,
+    .book-card-link:focus-visible .book-physical {
+      transform: translate(-8px, -10px);
+      box-shadow:
+        5px 5px 0 var(--book-pages),
+        11px 13px 0 var(--border-crisp);
+    }
+
+    .book-card-link:focus-visible { outline: none; }
+
+    .book-spine {
+      width: 16px;
+      flex-shrink: 0;
+      background: var(--lavender);
+      border-right: 2px solid var(--border-crisp);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 0;
+    }
+
+    .book-spine.accent-green { background: var(--green); }
+    .book-spine.accent-cyan { background: var(--soft-cyan); }
+    .book-spine.accent-coral { background: var(--coral); }
+    body.dark-mode .book-spine.accent-lavender { background: #3b2659; }
+
+    .spine-groove {
+      width: 8px;
+      height: 2px;
+      background: var(--border-crisp);
+    }
+
+    .book-cover-frame {
+      position: relative;
+      flex: 1;
+      background: #181124;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .book-cover-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .book-cover-fallback {
+      width: 100%;
+      height: 100%;
+      padding: 14px;
+      background: var(--surface-subtle);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: 8px;
+    }
+
+    .book-cover-fallback i { font-size: 2rem; color: var(--border-crisp); }
+    .book-cover-fallback span { font-weight: 800; font-size: 0.84rem; line-height: 1.25; }
+
+    .book-dl-badge {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 30px;
+      height: 30px;
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 2px solid var(--border-crisp);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.82rem;
+      box-shadow: 2px 2px 0 var(--border-crisp);
+      transition: background-color 0.2s ease, transform 0.18s var(--spring-slide);
+    }
+
+    .book-card-link:hover .book-dl-badge,
+    .book-card-link:focus-visible .book-dl-badge {
+      background: var(--green);
+      color: #1b380b;
+      transform: scale(1.06);
+    }
+
+    .book-format-badge {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: #181124;
+      color: var(--lavender);
+      border: 1.5px solid var(--lavender);
+      padding: 2px 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.68rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+
+    .book-label-plate {
+      margin-top: 14px;
+      padding: 8px 10px;
+      background: var(--surface-subtle);
+      border: 2px solid var(--border-crisp);
+      box-shadow: 3px 3px 0 var(--placeholder-bg);
+      transition: background-color 0.2s ease;
+    }
+
+    .book-card-link:hover .book-label-plate,
+    .book-card-link:focus-visible .book-label-plate {
+      background: var(--soft-cyan);
+      color: #181124;
+    }
+
+    .book-title-text {
+      font-weight: 800;
+      font-size: 0.9rem;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .book-author-text {
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      margin-top: 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .book-card-link:hover .book-author-text,
+    .book-card-link:focus-visible .book-author-text { color: #181124; }
+
+    .empty-shelf-slot {
+      grid-column: 1 / -1;
+      border: 2px dashed var(--placeholder-border);
+      background: var(--surface-subtle);
+      padding: 28px 18px;
+      text-align: center;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toast-stack {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 3000;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 340px;
+    }
+
+    .toast-item {
+      background: var(--card-bg);
+      color: var(--text-main);
+      border: 2px solid var(--border-crisp);
+      box-shadow: 4px 4px 0 var(--border-crisp);
+      padding: 11px 15px;
+      font-weight: 800;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: toastPop 0.22s var(--spring-slide);
+    }
+
+    .toast-item.success { border-left: 8px solid var(--green); }
+    .toast-item.error { border-left: 8px solid var(--coral); }
+    .toast-item.info { border-left: 8px solid var(--soft-cyan); }
+
+    @keyframes toastPop {
+      from { opacity: 0; transform: translate(12px, 12px); }
+      to { opacity: 1; transform: translate(0, 0); }
+    }
+
+    @media (max-width: 860px) {
+      .workspace-split { grid-template-columns: 1fr; }
+      .shelf-sidebar {
+        border-right: none;
+        border-bottom: 2px solid var(--border-crisp);
+        padding: 16px;
+      }
+      .folder-rack {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 12px;
+      }
+      .shelf-stage { padding: 18px 16px 50px; }
+    }
+
+    @media (max-width: 600px) {
+      .topbar { padding: 12px 64px 12px 14px; }
+      .shelf-books-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 22px 16px;
+        padding: 18px 14px 14px;
+      }
+      .status-wrap { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <button id="themeToggleBtn" class="theme-toggle-fixed" type="button" aria-label="Toggle Light/Dark Mode">
+    <i class="fa-solid fa-moon"></i>
+  </button>
+
+  <div class="app-fullscreen">
+    <header class="topbar">
+      <div class="brand-cluster">
+        <a href="index.html" class="brand-link">
+          <span class="brand-badge"><i class="fa-solid fa-book-bookmark"></i></span>
+          <h1 class="brand-title">neoLiB</h1>
+        </a>
+
+        <div class="status-wrap">
+          <div class="status-bubble">
+            <span class="equalizer" aria-hidden="true">
+              <span class="sound-bar"></span>
+              <span class="sound-bar"></span>
+              <span class="sound-bar"></span>
+            </span>
+            <span id="statusText">LOADING ARCHIVE...</span>
+          </div>
+          <span class="status-bubble-tail" aria-hidden="true"></span>
+          <span class="status-bubble-dot" aria-hidden="true"></span>
+        </div>
+      </div>
+
+      <div class="topbar-controls">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input
+            id="searchInput"
+            class="cozy-input"
+            type="search"
+            placeholder="Search books, authors, or shelf codes..."
+            aria-label="Search books and shelves"
+          />
+        </div>
+        <button id="refreshBtn" class="cozy-btn" type="button" title="Refresh Shelves">
+          <i class="fa-solid fa-rotate"></i>
+          <span>Sync</span>
+        </button>
+        <a href="console.html" class="cozy-btn primary">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Console</span>
+        </a>
+      </div>
+    </header>
+
+    <div class="workspace-split">
+      <aside class="shelf-sidebar" aria-label="Document Shelf Folders">
+        <div class="sidebar-heading">
+          <span><i class="fa-solid fa-folder-tree"></i> Document Shelves</span>
+          <span class="tag mono" id="totalBooksBadge">0</span>
+        </div>
+        <div class="folder-rack" id="folderRack"></div>
+      </aside>
+
+      <main class="shelf-stage">
+        <div class="stage-banner">
+          <div>
+            <h2 class="stage-heading" id="stageHeading">all document shelves</h2>
+            <p class="stage-sub">Click any book cover on a shelf to open its download link.</p>
+          </div>
+          <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <span class="tag cyan" id="modeBadge">
+              <i class="fa-solid fa-database"></i> CHECKING...
+            </span>
+          </div>
+        </div>
+
+        <div id="shelvesContainer" style="display:flex; flex-direction:column; gap:36px;"></div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Supabase JS UMD v2 + Deploy-Time Secret Injection Target -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script id="neolib-env">window.NEOLIB_ENV = { SUPABASE_URL: "", SUPABASE_ANON_KEY: "" };</script>
+  <script>
+    (function () {
+      "use strict";
+
+      const LS_THEME = "neolib_theme";
+      const LS_SUPA_URL = "neolib_supabase_url";
+      const LS_SUPA_KEY = "neolib_supabase_key";
+      const LS_DEMO_SHELVES = "neolib_demo_shelves_v1";
+      const LS_DEMO_BOOKS = "neolib_demo_books_v1";
+
+      const DEFAULT_SHELVES = [
+        {
+          id: "demo-shelf-1",
+          name: "System Design & Code",
+          code: "SH-01",
+          description: "Engineering handbooks, architecture blueprints, and clean programming manuals.",
+          accent: "lavender",
+          created_at: "2026-01-01T10:00:00Z"
+        },
+        {
+          id: "demo-shelf-2",
+          name: "Visual Arts & Zines",
+          code: "SH-02",
+          description: "Illustration monographs, grid typography guides, and tactile layout books.",
+          accent: "green",
+          created_at: "2026-01-02T10:00:00Z"
+        }
+      ];
+
+      const DEFAULT_BOOKS = [
+        {
+          id: "demo-book-1",
+          shelf_id: "demo-shelf-1",
+          title: "Designing Data-Intensive Apps",
+          author: "Sample Archive",
+          format: "PDF",
+          thumbnail_url: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=420&q=80",
+          download_url: "https://example.com/sample-book-1.pdf",
+          created_at: "2026-01-03T10:00:00Z"
+        },
+        {
+          id: "demo-book-2",
+          shelf_id: "demo-shelf-1",
+          title: "The Pragmatic Field Guide",
+          author: "Sample Archive",
+          format: "EPUB",
+          thumbnail_url: "https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&w=420&q=80",
+          download_url: "https://example.com/sample-book-2.epub",
+          created_at: "2026-01-04T10:00:00Z"
+        },
+        {
+          id: "demo-book-3",
+          shelf_id: "demo-shelf-2",
+          title: "Grid Systems in Neo-Print",
+          author: "Sample Archive",
+          format: "PDF",
+          thumbnail_url: "https://images.unsplash.com/photo-1589998059171-988d887df646?auto=format&fit=crop&w=420&q=80",
+          download_url: "https://example.com/sample-book-3.pdf",
+          created_at: "2026-01-05T10:00:00Z"
+        }
+      ];
+
+      let supabaseClient = null;
+      let activeMode = "demo";
+      let state = { shelves: [], books: [], selectedShelfId: "ALL", searchQuery: "" };
+
+      function escapeHtml(str) {
+        return String(str ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function sanitizeUrl(url) {
+        const trimmed = String(url ?? "").trim();
+        if (!trimmed) return "";
+        if (trimmed.startsWith("/") || trimmed.startsWith("./") || trimmed.startsWith("../")) return trimmed;
+        try {
+          const parsed = new URL(trimmed);
+          if (parsed.protocol === "http:" || parsed.protocol === "https:") return parsed.href;
+        } catch (_) {
+          return "";
+        }
+        return "";
+      }
+
+      function showToast(message, type = "info") {
+        let stack = document.getElementById("toastStack");
+        if (!stack) {
+          stack = document.createElement("div");
+          stack.id = "toastStack";
+          stack.className = "toast-stack";
+          document.body.appendChild(stack);
+        }
+        const item = document.createElement("div");
+        item.className = `toast-item ${type}`;
+        const icon = type === "success" ? "fa-circle-check" : type === "error" ? "fa-triangle-exclamation" : "fa-circle-info";
+        item.innerHTML = `<i class="fa-solid ${icon}"></i><span>${escapeHtml(message)}</span>`;
+        stack.appendChild(item);
+        setTimeout(() => item.remove(), 3400);
+      }
+
+      function initThemeToggle() {
+        const saved = localStorage.getItem(LS_THEME);
+        const prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        document.body.classList.toggle("dark-mode", saved ? saved === "dark" : prefersDark);
+        const btn = document.getElementById("themeToggleBtn");
+        function syncIcon() {
+          const dark = document.body.classList.contains("dark-mode");
+          btn.innerHTML = dark ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+          btn.setAttribute("title", dark ? "Switch to Light Mode" : "Switch to Dark Mode");
+        }
+        syncIcon();
+        btn.addEventListener("click", () => {
+          const nextDark = !document.body.classList.contains("dark-mode");
+          document.body.classList.toggle("dark-mode", nextDark);
+          localStorage.setItem(LS_THEME, nextDark ? "dark" : "light");
+          syncIcon();
+        });
+      }
+
+      function initClient() {
+        const env = window.NEOLIB_ENV || {};
+        const url = (env.SUPABASE_URL || localStorage.getItem(LS_SUPA_URL) || "").trim();
+        const key = (env.SUPABASE_ANON_KEY || localStorage.getItem(LS_SUPA_KEY) || "").trim();
+        if (url && key && window.supabase && typeof window.supabase.createClient === "function") {
+          try {
+            supabaseClient = window.supabase.createClient(url, key);
+            activeMode = "supabase";
+            return;
+          } catch (err) {
+            console.error(err);
+          }
+        }
+        supabaseClient = null;
+        activeMode = "demo";
+        if (!localStorage.getItem(LS_DEMO_SHELVES)) localStorage.setItem(LS_DEMO_SHELVES, JSON.stringify(DEFAULT_SHELVES));
+        if (!localStorage.getItem(LS_DEMO_BOOKS)) localStorage.setItem(LS_DEMO_BOOKS, JSON.stringify(DEFAULT_BOOKS));
+      }
+
+      async function fetchLibrary() {
+        if (activeMode === "supabase" && supabaseClient) {
+          const [shelvesRes, booksRes] = await Promise.all([
+            supabaseClient.from("shelves").select("*").order("created_at", { ascending: true }),
+            supabaseClient.from("books").select("*").order("created_at", { ascending: true })
+          ]);
+          if (shelvesRes.error) throw shelvesRes.error;
+          if (booksRes.error) throw booksRes.error;
+          return { shelves: shelvesRes.data || [], books: booksRes.data || [] };
+        }
+        return {
+          shelves: JSON.parse(localStorage.getItem(LS_DEMO_SHELVES) || "[]"),
+          books: JSON.parse(localStorage.getItem(LS_DEMO_BOOKS) || "[]")
+        };
+      }
+
+      function renderBookCardHtml(book, shelfAccent = "lavender") {
+        const safeTitle = escapeHtml(book.title || "Untitled Book");
+        const safeAuthor = escapeHtml(book.author || "");
+        const safeFormat = escapeHtml((book.format || "PDF").toUpperCase());
+        const safeThumb = sanitizeUrl(book.thumbnail_url);
+        const safeDownload = sanitizeUrl(book.download_url) || "#";
+        const accentClass = ["lavender", "green", "cyan", "coral"].includes(shelfAccent)
+          ? `accent-${shelfAccent}`
+          : "accent-lavender";
+
+        const coverContent = safeThumb
+          ? `<img class="book-cover-img" src="${escapeHtml(safeThumb)}" alt="${safeTitle}" loading="lazy"
+               onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+             <div class="book-cover-fallback" style="display:none;">
+               <i class="fa-solid fa-book"></i>
+               <span>${safeTitle}</span>
+             </div>`
+          : `<div class="book-cover-fallback">
+               <i class="fa-solid fa-book"></i>
+               <span>${safeTitle}</span>
+             </div>`;
+
+        return `
+          <a class="book-card-link" href="${escapeHtml(safeDownload)}" target="_blank" rel="noopener noreferrer" title="Download ${safeTitle}">
+            <div class="book-physical">
+              <div class="book-spine ${accentClass}" aria-hidden="true">
+                <span class="spine-groove"></span>
+                <span class="spine-groove"></span>
+              </div>
+              <div class="book-cover-frame">
+                ${coverContent}
+                <span class="book-dl-badge" aria-hidden="true"><i class="fa-solid fa-download"></i></span>
+                <span class="book-format-badge">${safeFormat}</span>
+              </div>
+            </div>
+            <div class="book-label-plate">
+              <div class="book-title-text">${safeTitle}</div>
+              ${safeAuthor ? `<div class="book-author-text">${safeAuthor}</div>` : ""}
+            </div>
+          </a>`;
+      }
+
+      function updateStatusIndicators() {
+        const modeBadge = document.getElementById("modeBadge");
+        const statusText = document.getElementById("statusText");
+        const total = state.books.length;
+
+        if (activeMode === "supabase") {
+          modeBadge.className = "tag green";
+          modeBadge.innerHTML = '<i class="fa-solid fa-bolt"></i> SUPABASE LIVE';
+          statusText.textContent = `${state.shelves.length} SHELVES // ${total} BOOKS`;
+        } else {
+          modeBadge.className = "tag cyan";
+          modeBadge.innerHTML = '<i class="fa-solid fa-flask"></i> LOCAL DEMO MODE';
+          statusText.textContent = `DEMO ARCHIVE // ${total} BOOKS`;
+        }
+        document.getElementById("totalBooksBadge").textContent = String(total);
+      }
+
+      function renderFolderRack() {
+        const rack = document.getElementById("folderRack");
+        const allActive = state.selectedShelfId === "ALL" ? "active" : "";
+
+        let html = `
+          <button class="folder-tab-btn ${allActive}" type="button" data-shelf-id="ALL">
+            <span class="folder-ear"><i class="fa-solid fa-layer-group"></i> MASTER INDEX</span>
+            <div class="folder-body">
+              <span class="folder-title-wrap">
+                <i class="fa-solid fa-folders"></i>
+                <span class="folder-name">All Shelves</span>
+              </span>
+              <span class="folder-count">${state.books.length}</span>
+            </div>
+          </button>`;
+
+        for (const shelf of state.shelves) {
+          const count = state.books.filter((b) => b.shelf_id === shelf.id).length;
+          const isActive = state.selectedShelfId === shelf.id ? "active" : "";
+          const icon = isActive ? "fa-folder-open" : "fa-folder";
+          html += `
+            <button class="folder-tab-btn ${isActive}" type="button" data-shelf-id="${escapeHtml(shelf.id)}">
+              <span class="folder-ear"><i class="fa-solid fa-tag"></i> ${escapeHtml(shelf.code || "SH")}</span>
+              <div class="folder-body">
+                <span class="folder-title-wrap">
+                  <i class="fa-solid ${icon}"></i>
+                  <span class="folder-name">${escapeHtml(shelf.name)}</span>
+                </span>
+                <span class="folder-count">${count}</span>
+              </div>
+            </button>`;
+        }
+
+        if (state.shelves.length === 0) {
+          html += `<div style="border:2px dashed var(--placeholder-border); padding:14px; font-size:0.85rem; color:var(--text-muted);">No shelves yet. Open <strong>Console</strong> to create your first document shelf.</div>`;
+        }
+
+        rack.innerHTML = html;
+        rack.querySelectorAll(".folder-tab-btn").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            state.selectedShelfId = btn.getAttribute("data-shelf-id");
+            renderFolderRack();
+            renderShelves();
+          });
+        });
+      }
+
+      function renderShelves() {
+        const container = document.getElementById("shelvesContainer");
+        const stageHeading = document.getElementById("stageHeading");
+        const q = state.searchQuery.trim().toLowerCase();
+
+        let shelvesToShow = state.shelves;
+        if (state.selectedShelfId !== "ALL") {
+          shelvesToShow = state.shelves.filter((s) => s.id === state.selectedShelfId);
+          stageHeading.textContent = shelvesToShow[0] ? shelvesToShow[0].name.toLowerCase() : "document shelf";
+        } else {
+          stageHeading.textContent = "all document shelves";
+        }
+
+        if (shelvesToShow.length === 0) {
+          container.innerHTML = `
+            <div class="pop-shell" data-stamp="✦ EMPTY ARCHIVE">
+              <div class="slide-card" style="text-align:center; padding:42px 24px;">
+                <i class="fa-solid fa-folder-plus" style="font-size:2.4rem; margin-bottom:12px;"></i>
+                <h3 style="margin:0 0 8px;">No Document Shelves Found</h3>
+                <p style="color:var(--text-muted); margin:0 0 18px;">Open Console to create shelves and add book thumbnails with download links.</p>
+                <a href="console.html" class="cozy-btn primary"><i class="fa-solid fa-sliders"></i> Open Console</a>
+              </div>
+            </div>`;
+          return;
+        }
+
+        let html = "";
+        let renderedCount = 0;
+
+        for (const shelf of shelvesToShow) {
+          let shelfBooks = state.books.filter((b) => b.shelf_id === shelf.id);
+
+          if (q) {
+            const shelfMatches =
+              shelf.name.toLowerCase().includes(q) ||
+              (shelf.code || "").toLowerCase().includes(q) ||
+              (shelf.description || "").toLowerCase().includes(q);
+            if (!shelfMatches) {
+              shelfBooks = shelfBooks.filter((b) =>
+                b.title.toLowerCase().includes(q) ||
+                (b.author || "").toLowerCase().includes(q) ||
+                (b.format || "").toLowerCase().includes(q)
+              );
+            }
+            if (shelfBooks.length === 0 && !shelfMatches) continue;
+          }
+
+          renderedCount++;
+          const accent = ["lavender", "green", "cyan", "coral"].includes(shelf.accent) ? shelf.accent : "lavender";
+          const booksGridHtml = shelfBooks.length > 0
+            ? shelfBooks.map((book) => renderBookCardHtml(book, accent)).join("")
+            : `<div class="empty-shelf-slot">
+                 <i class="fa-solid fa-book-open" style="font-size:1.6rem;"></i>
+                 <span>This document shelf has no books yet.</span>
+                 <a href="console.html" class="cozy-btn sm lavender"><i class="fa-solid fa-plus"></i> Add Books in Console</a>
+               </div>`;
+
+          html += `
+            <section class="document-shelf-unit" aria-label="${escapeHtml(shelf.name)}">
+              <div class="shelf-folder-header">
+                <div class="shelf-folder-tab accent-${accent}">
+                  <i class="fa-solid fa-folder-open"></i>
+                  <span>${escapeHtml(shelf.name)}</span>
+                  <span class="shelf-code-chip">${escapeHtml(shelf.code || "SH")}</span>
+                </div>
+                <div class="shelf-meta-bar">
+                  <span class="tag mono">${shelfBooks.length} ${shelfBooks.length === 1 ? "BOOK" : "BOOKS"}</span>
+                </div>
+              </div>
+
+              <div class="pop-shell" data-stamp="✦ SHELF">
+                <div class="slide-card shelf-cabinet">
+                  ${shelf.description
+                    ? `<div class="shelf-description-strip">
+                         <span><i class="fa-solid fa-file-lines"></i> ${escapeHtml(shelf.description)}</span>
+                         <span class="mono" style="font-size:0.75rem;">CLICK ANY BOOK TO DOWNLOAD</span>
+                       </div>`
+                    : ""}
+                  <div class="shelf-books-grid">${booksGridHtml}</div>
+                  <div class="shelf-plank" aria-hidden="true">
+                    <span class="shelf-plank-bolt"></span>
+                    <span class="shelf-plank-bolt"></span>
+                  </div>
+                  <div class="shelf-under-shadow" aria-hidden="true">
+                    <span class="shelf-bracket"></span>
+                    <span class="shelf-bracket"></span>
+                  </div>
+                </div>
+              </div>
+            </section>`;
+        }
+
+        if (renderedCount === 0) {
+          html = `<div class="empty-shelf-slot"><i class="fa-solid fa-magnifying-glass" style="font-size:1.6rem;"></i><span>No books or shelves match "<strong>${escapeHtml(state.searchQuery)}</strong>".</span></div>`;
+        }
+        container.innerHTML = html;
+      }
+
+      async function loadData(showFeedback = false) {
+        try {
+          const data = await fetchLibrary();
+          state.shelves = data.shelves;
+          state.books = data.books;
+          if (state.selectedShelfId !== "ALL" && !state.shelves.some((s) => s.id === state.selectedShelfId)) {
+            state.selectedShelfId = "ALL";
+          }
+          updateStatusIndicators();
+          renderFolderRack();
+          renderShelves();
+          if (showFeedback) showToast("Shelves synced!", "success");
+        } catch (err) {
+          console.error(err);
+          showToast(err.message || "Failed to load shelves from Supabase", "error");
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", () => {
+        initThemeToggle();
+        initClient();
+        loadData(false);
+        document.getElementById("searchInput").addEventListener("input", (e) => {
+          state.searchQuery = e.target.value;
+          renderShelves();
+        });
+        document.getElementById("refreshBtn").addEventListener("click", () => loadData(true));
+      });
+    })();
+  </script>
+</body>
+</html>
